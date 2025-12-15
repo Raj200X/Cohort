@@ -52,45 +52,88 @@ app.get('/api/seed', async (req, res) => {
             { name: "General Study", icon: "Users", color: "bg-green-100 text-green-600" }
         ]);
 
-        // 2. Dummy User
-        let demoUser = await User.findOne({ email: 'demo@example.com' });
-        if (!demoUser) {
-            demoUser = await User.create({
-                username: 'DemoUser',
-                email: 'demo@example.com',
-                password: 'password123',
-                studyStats: { totalHours: 24.5, streak: 5 }
-            });
-        }
+        // 2. Users (Create multiple realistic profiles)
+        await User.deleteMany({});
+        // Note: In a real prod env, be careful deleting all users! But for this seed route it's expected.
 
-        // 3. Posts
+        const users = await User.insertMany([
+            {
+                username: 'Alex_Chen',
+                email: 'alex@example.com',
+                password: 'password123',
+                studyStats: { totalHours: 120, streak: 12 }
+            },
+            {
+                username: 'Sarah_PreMed',
+                email: 'sarah@example.com',
+                password: 'password123',
+                studyStats: { totalHours: 85, streak: 4 }
+            },
+            {
+                username: 'Jordan_Dev',
+                email: 'jordan@example.com',
+                password: 'password123',
+                studyStats: { totalHours: 200, streak: 45 }
+            },
+            {
+                username: 'Mia_Arts',
+                email: 'mia@example.com',
+                password: 'password123',
+                studyStats: { totalHours: 40, streak: 2 }
+            }
+        ]);
+
+        // 3. Posts (Diverse content)
         await Post.deleteMany({});
         await Post.insertMany([
             {
-                author: demoUser._id,
-                content: "Just finished a 4-hour deep work session! Using the Pomodoro technique really helped me stay focused.",
-                tags: ["#productivity", "#studyhacks"],
-                likes: 24,
-                comments: 5,
+                author: users[0]._id, // Alex
+                content: "Finally mastered Dynamic Programming! The key was visualizing the sub-problems. If anyone needs help with DP, let me know!",
+                tags: ["#ComputerScience", "#Algorithms", "#Win"],
+                likes: 45,
+                comments: 12,
                 createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
             },
             {
-                author: demoUser._id,
-                content: "Looking for a study buddy for Advanced Physics. Ideally someone in timezone EST.",
-                tags: ["#physics", "#studybuddy"],
-                likes: 12,
-                comments: 8,
+                author: users[1]._id, // Sarah
+                content: "MCAT prep is killing me 😭 but partially grateful for this study group. 4 hours down, 2 to go!",
+                tags: ["#PreMed", "#StudyGrind", "#Motivation"],
+                likes: 89,
+                comments: 20,
                 createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000)
+            },
+            {
+                author: users[2]._id, // Jordan
+                content: "Anyone have good resources for System Design interviews? I've gone through the primer but need more practice problems.",
+                tags: ["#TechCareers", "#Resources", "#Help"],
+                likes: 15,
+                comments: 8,
+                createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
+            },
+            {
+                author: users[0]._id, // Alex again
+                content: "Late night coding session... bugs don't fix themselves 🐛☕️",
+                tags: ["#NightOwl", "#Coding"],
+                likes: 32,
+                comments: 4,
+                createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            },
+            {
+                author: users[3]._id, // Mia
+                content: "Just finished my Art History thesis draft! Time to celebrate with some sleep. 😴",
+                tags: ["#ArtHistory", "#Thesis", "#Done"],
+                likes: 67,
+                comments: 15,
+                createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000)
             }
         ]);
 
         // 4. Rooms
-        const roomCount = await Room.countDocuments();
-        if (roomCount === 0) {
-            await Room.create({ roomId: 'demo-room-1', name: 'Late Night Coding 🌙', createdBy: demoUser._id });
-            await Room.create({ roomId: 'demo-room-2', name: 'Calculus Cram Session', createdBy: demoUser._id });
-            await Room.create({ roomId: 'demo-room-3', name: 'Chill Lofi Study', createdBy: demoUser._id });
-        }
+        await Room.deleteMany({});
+        await Room.create({ roomId: 'cs-101', name: 'CS101 Algorithms', createdBy: users[0]._id });
+        await Room.create({ roomId: 'med-study', name: 'Med School Grind 🩺', createdBy: users[1]._id });
+        await Room.create({ roomId: 'lofi-chill', name: 'Lofi & Chill 🎧', createdBy: users[2]._id });
+        await Room.create({ roomId: 'design-crew', name: 'Design Sprints', createdBy: users[3]._id });
 
         res.send('Database seeded successfully!');
     } catch (err) {
