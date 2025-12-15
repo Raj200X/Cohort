@@ -33,6 +33,72 @@ app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
+// TEMPORARY: Trigger seeding via HTTP
+app.get('/api/seed', async (req, res) => {
+    try {
+        const Category = require('./models/Category');
+        const Post = require('./models/Post');
+        const Goal = require('./models/Goal');
+        const StudySession = require('./models/StudySession');
+        const User = require('./models/User');
+        const Room = require('./models/Room');
+
+        // 1. Categories
+        await Category.deleteMany({});
+        await Category.insertMany([
+            { name: "Computer Science", icon: "Code", color: "bg-blue-100 text-blue-600" },
+            { name: "Mathematics", icon: "Atom", color: "bg-purple-100 text-purple-600" },
+            { name: "Literature", icon: "BookOpen", color: "bg-amber-100 text-amber-600" },
+            { name: "General Study", icon: "Users", color: "bg-green-100 text-green-600" }
+        ]);
+
+        // 2. Dummy User
+        let demoUser = await User.findOne({ email: 'demo@example.com' });
+        if (!demoUser) {
+            demoUser = await User.create({
+                username: 'DemoUser',
+                email: 'demo@example.com',
+                password: 'password123',
+                studyStats: { totalHours: 24.5, streak: 5 }
+            });
+        }
+
+        // 3. Posts
+        await Post.deleteMany({});
+        await Post.insertMany([
+            {
+                author: demoUser._id,
+                content: "Just finished a 4-hour deep work session! Using the Pomodoro technique really helped me stay focused.",
+                tags: ["#productivity", "#studyhacks"],
+                likes: 24,
+                comments: 5,
+                createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+            },
+            {
+                author: demoUser._id,
+                content: "Looking for a study buddy for Advanced Physics. Ideally someone in timezone EST.",
+                tags: ["#physics", "#studybuddy"],
+                likes: 12,
+                comments: 8,
+                createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000)
+            }
+        ]);
+
+        // 4. Rooms
+        const roomCount = await Room.countDocuments();
+        if (roomCount === 0) {
+            await Room.create({ roomId: 'demo-room-1', name: 'Late Night Coding 🌙', createdBy: demoUser._id });
+            await Room.create({ roomId: 'demo-room-2', name: 'Calculus Cram Session', createdBy: demoUser._id });
+            await Room.create({ roomId: 'demo-room-3', name: 'Chill Lofi Study', createdBy: demoUser._id });
+        }
+
+        res.send('Database seeded successfully!');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Seeding failed: ' + err.message);
+    }
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/users', require('./routes/users'));
