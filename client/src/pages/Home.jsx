@@ -11,6 +11,16 @@ const Home = () => {
     const [roomId, setRoomId] = useState('');
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
+    const [dashboardData, setDashboardData] = useState({
+        studyStats: { streak: 0, totalHours: 0 },
+        joinedRooms: []
+    });
+
+    useEffect(() => {
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
 
     const user = JSON.parse(localStorage.getItem('user'));
 
@@ -330,17 +340,6 @@ const Home = () => {
     }
 
     // Dashboard UI (Logged-in)
-    // New State for Dashboard
-    const [dashboardData, setDashboardData] = useState({
-        studyStats: { streak: 0, totalHours: 0 },
-        joinedRooms: []
-    });
-
-    useEffect(() => {
-        if (user) {
-            fetchDashboardData();
-        }
-    }, [user]);
 
     const fetchDashboardData = async () => {
         try {
