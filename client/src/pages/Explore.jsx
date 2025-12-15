@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { Compass, Search, Code, Atom, BookOpen, Users } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
