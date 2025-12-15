@@ -41,7 +41,7 @@ const Insights = () => {
 
     const fetchData = async () => {
         try {
-            const res = await axios.get(`${API_URL} /api/insights / ${user._id} `);
+            const res = await axios.get(`${API_URL}/api/insights/${user._id}`);
             setData(res.data);
         } catch (err) {
             console.error(err);

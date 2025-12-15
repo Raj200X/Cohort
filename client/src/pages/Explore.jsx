@@ -13,7 +13,7 @@ const Explore = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get(`${API_URL} /api/explore`);
+                const res = await axios.get(`${API_URL}/api/explore`);
                 setCategories(res.data.categories);
                 setTrendingRooms(res.data.trendingRooms);
             } catch (err) {
