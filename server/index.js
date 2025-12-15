@@ -1,0 +1,112 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
+require('dotenv').config();
+require('./config/passport');
+const passport = require('passport');
+
+const app = express();
+const server = http.createServer(app);
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.CLIENT_URL
+].filter(Boolean);
+
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+        methods: ["GET", "POST"]
+    }
+});
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
+app.use(express.json());
+app.use(passport.initialize());
+
+app.get('/', (req, res) => {
+    res.send('Server is running');
+});
+
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/rooms', require('./routes/rooms'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/explore', require('./routes/explore'));
+app.use('/api/community', require('./routes/community'));
+app.use('/api/insights', require('./routes/insights'));
+
+const PORT = process.env.PORT || 5000;
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/studyroom', {
+    family: 4 // Force IPv4 to avoid some local connection issues
+})
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => {
+        console.error('MongoDB Connection Error:', err);
+        // Fallback for some local environments if 127.0.0.1 fails
+        if (err.name === 'MongoServerSelectionError' && !process.env.MONGO_URI) {
+            console.log('Retrying with localhost...');
+            mongoose.connect('mongodb://localhost:27017/studyroom', { family: 4 })
+                .then(() => console.log('MongoDB connected (fallback)'))
+                .catch(e => console.error('Fallback failed:', e));
+        }
+    });
+
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+        socket.to(roomId).emit('user-connected', socket.id);
+    });
+
+    socket.on('send-message', (data) => {
+        io.to(data.roomId).emit('receive-message', data);
+    });
+
+    socket.on('call-user', (data) => {
+        io.to(data.userToCall).emit('call-user', { signal: data.signalData, from: data.from, name: data.name });
+    });
+
+    socket.on('answer-call', (data) => {
+        io.to(data.to).emit('call-accepted', { signal: data.signal, from: socket.id, name: data.name }); // Pass name back
+    });
+
+    socket.on('send-changes', (delta) => {
+        socket.broadcast.to(delta.roomId).emit('receive-changes', delta);
+    });
+
+    socket.on('whiteboard-draw', (data) => {
+        socket.broadcast.to(data.roomId).emit('whiteboard-draw', data);
+    });
+
+    socket.on('toggle-media', ({ roomId, peerID, type, status }) => {
+        socket.broadcast.to(roomId).emit('media-toggled', { peerID, type, status });
+    });
+
+    socket.on('whiteboard-clear', (roomId) => {
+        socket.broadcast.to(roomId).emit('whiteboard-clear');
+    });
+
+    socket.on('disconnecting', () => {
+        // Broadcast "user-disconnected" with ID to all rooms the user is in
+        const rooms = [...socket.rooms];
+        rooms.forEach((roomId) => {
+            socket.to(roomId).emit('user-disconnected', socket.id);
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        socket.broadcast.emit('call-ended');
+    });
+});
+
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
