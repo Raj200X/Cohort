@@ -8,6 +8,7 @@ import Register from '../pages/Register';
 import Explore from '../pages/Explore';
 import Insights from '../pages/Insights';
 import Community from '../pages/Community';
+import Profile from '../pages/Profile';
 import PageWrapper from './PageWrapper';
 
 const AnimatedRoutes = () => {
@@ -69,6 +70,14 @@ const AnimatedRoutes = () => {
                     element={
                         <PageWrapper>
                             <Community />
+                        </PageWrapper>
+                    }
+                />
+                <Route
+                    path="/profile"
+                    element={
+                        <PageWrapper>
+                            <Profile />
                         </PageWrapper>
                     }
                 />

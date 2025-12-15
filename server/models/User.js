@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
+    avatar: {
+        type: String,
+        default: ''
+    },
     studyStats: {
         totalHours: { type: Number, default: 0 },
         streak: { type: Number, default: 0 },

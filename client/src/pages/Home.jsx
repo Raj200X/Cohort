@@ -11,6 +11,7 @@ const Home = () => {
     const [roomId, setRoomId] = useState('');
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('user'));
     const [dashboardData, setDashboardData] = useState({
         studyStats: { streak: 0, totalHours: 0 },
         joinedRooms: []
@@ -22,7 +23,7 @@ const Home = () => {
         }
     }, [user]);
 
-    const user = JSON.parse(localStorage.getItem('user'));
+
 
     useEffect(() => {
         fetchRooms();
