@@ -9,6 +9,9 @@ import Explore from '../pages/Explore';
 import Insights from '../pages/Insights';
 import Community from '../pages/Community';
 import Profile from '../pages/Profile';
+import PrivacyPolicy from '../pages/PrivacyPolicy';
+import TermsOfService from '../pages/TermsOfService';
+import CookiePolicy from '../pages/CookiePolicy';
 import PageWrapper from './PageWrapper';
 
 const AnimatedRoutes = () => {
@@ -78,6 +81,30 @@ const AnimatedRoutes = () => {
                     element={
                         <PageWrapper>
                             <Profile />
+                        </PageWrapper>
+                    }
+                />
+                <Route
+                    path="/privacy"
+                    element={
+                        <PageWrapper>
+                            <PrivacyPolicy />
+                        </PageWrapper>
+                    }
+                />
+                <Route
+                    path="/terms"
+                    element={
+                        <PageWrapper>
+                            <TermsOfService />
+                        </PageWrapper>
+                    }
+                />
+                <Route
+                    path="/cookie-policy"
+                    element={
+                        <PageWrapper>
+                            <CookiePolicy />
                         </PageWrapper>
                     }
                 />

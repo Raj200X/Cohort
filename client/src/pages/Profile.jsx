@@ -76,136 +76,139 @@ const Profile = () => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                className="max-w-4xl w-full glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10 transition-colors"
             >
-                {/* Visual Side / Avatar Selection */}
-                <div className="md:w-1/3 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 text-white flex flex-col items-center justify-center relative overflow-hidden">
+                {/* Left Panel: Preview */}
+                <div className="md:w-1/3 bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-500 p-8 md:p-12 text-white flex flex-col items-center justify-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                     <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
 
-                    <h2 className="text-3xl font-bold font-display mb-8 relative z-10">Your Profile</h2>
-
-                    <div className="relative mb-8 group">
+                    <div className="relative mb-6">
                         <div className="w-40 h-40 rounded-full bg-white/20 backdrop-blur-sm p-1 shadow-xl border-4 border-white/30 overflow-hidden">
-                            <img
-                                src={formData.avatar || presetAvatars[0]}
-                                alt="Profile"
-                                className="w-full h-full object-cover bg-white"
-                            />
+                            {formData.avatar ? (
+                                <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover bg-white dark:bg-gray-800" />
+                            ) : (
+                                <div className="w-full h-full bg-white dark:bg-gray-800 flex items-center justify-center text-4xl font-bold text-indigo-500">
+                                    {formData.username.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-full cursor-pointer">
-                            <span className="text-xs font-bold">Current</span>
-                        </div>
+                        <button className="absolute bottom-2 right-2 bg-white text-indigo-600 p-2 rounded-full shadow-lg hover:scale-110 transition-transform">
+                            <Camera size={18} />
+                        </button>
                     </div>
 
-                    <div className="w-full space-y-4 relative z-10">
-                        <p className="text-center text-indigo-100 text-sm font-medium uppercase tracking-wide">Choose Avatar</p>
-                        <div className="flex justify-center gap-2 flex-wrap">
-                            {presetAvatars.map((url, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={() => handleAvatarSelect(url)}
-                                    className={`w-10 h-10 rounded-full cursor-pointer border-2 transition-all hover:scale-110 bg-white ${formData.avatar === url ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                                >
-                                    <img src={url} alt={`Avatar ${idx}`} className="w-full h-full" />
-                                </div>
-                            ))}
-                        </div>
-                        <div className="mt-4">
-                            <p className="text-xs text-center text-indigo-200 mb-2">Or paste a custom URL</p>
+                    <h2 className="text-2xl font-bold font-display text-center mb-1">{formData.username || 'Your Name'}</h2>
+                    <p className="text-indigo-100 text-sm mb-6">Student</p>
+
+                    <div className="flex gap-2">
+                        {['https://api.dicebear.com/7.x/notionists/svg?seed=Felix', 'https://api.dicebear.com/7.x/notionists/svg?seed=Aneka', 'https://api.dicebear.com/7.x/notionists/svg?seed=Mila'].map((url, i) => (
+                            <img
+                                key={i}
+                                src={url}
+                                onClick={() => handleAvatarSelect(url)}
+                                className={`w-10 h-10 rounded-full cursor-pointer border-2 transition-all hover:scale-110 bg-white ${formData.avatar === url ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="mt-4 w-full">
+                        <div className="relative">
+                            <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-200" />
                             <input
                                 type="text"
-                                placeholder="https://example.com/me.png"
-                                value={formData.avatar}
-                                onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                                className="w-full px-3 py-2 bg-white/10 border border-indigo-400/30 rounded-lg text-xs text-white placeholder-indigo-300/50 focus:outline-none focus:ring-1 focus:ring-white/50"
+                                placeholder="Paste image URL..."
+                                value={customAvatarUrl}
+                                onChange={(e) => {
+                                    setCustomAvatarUrl(e.target.value);
+                                    if (e.target.value) setFormData({ ...formData, avatar: e.target.value });
+                                }}
+                                className="w-full px-3 py-2 pl-9 bg-white/10 border border-indigo-400/30 rounded-lg text-xs text-white placeholder-indigo-300/50 focus:outline-none focus:ring-1 focus:ring-white/50"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Edit Form Side */}
-                <div className="md:w-2/3 p-8 md:p-12 bg-gray-50">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Details</h3>
-
-                    {message && (
-                        <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl border border-green-200 text-sm font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                            <Save size={16} /> {message}
-                        </div>
-                    )}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-semibold animate-in fade-in slide-in-from-top-2">
-                            {error}
-                        </div>
-                    )}
+                {/* Right Panel: Edit Form */}
+                <div className="md:w-2/3 p-8 md:p-12 bg-gray-50/50 dark:bg-black/20">
+                    <div className="flex justify-between items-center mb-8">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white">Profile Settings</h3>
+                        <User className="text-gray-400" size={20} />
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Username</label>
+                        {message && (
+                            <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'}`}>
+                                {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                                {message.text}
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input
                                         type="text"
                                         name="username"
                                         value={formData.username}
                                         onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-gray-700"
+                                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-gray-700 dark:text-white"
+                                        placeholder="johndoe"
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                                <div className="relative opacity-70">
+                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input
                                         type="email"
-                                        value={formData.email}
+                                        value={user.email}
                                         disabled
-                                        className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed font-medium"
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium"
                                     />
                                 </div>
+                                <p className="text-xs text-gray-400 mt-1 ml-1">Email cannot be changed</p>
                             </div>
-                        </div>
 
-                        <div className="border-t border-gray-200 my-6 pt-6">
-                            <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <Lock size={16} className="text-indigo-600" /> Change Password
-                            </h4>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">New Password</label>
+                            <div className="pt-4 border-t border-gray-200 dark:border-white/10">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                <div className="relative">
+                                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input
                                         type="password"
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                                         placeholder="••••••••"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Confirm Password</label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                        placeholder="••••••••"
+                                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700 dark:text-white"
                                     />
                                 </div>
                             </div>
+                            <div className="relative">
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder="Confirm New Password"
+                                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700 dark:text-white"
+                                />
+                            </div>
                         </div>
 
-                        <div className="flex justify-end pt-4">
+                        <div className="pt-4 flex items-center justify-end gap-4">
+                            <button type="button" onClick={() => window.history.back()} className="px-6 py-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors font-medium">Cancel</button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="btn-primary px-8 py-2.5 rounded-xl text-white font-medium shadow-lg shadow-indigo-500/30 disabled:opacity-70 flex items-center gap-2"
                             >
-                                {loading ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
-                                Save Changes
+                                {loading ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     </form>
@@ -216,3 +219,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

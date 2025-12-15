@@ -82,7 +82,7 @@ const Home = () => {
         return (
             <div className="min-h-[calc(100vh-80px)]">
                 {/* Hero Section */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-32 flex flex-col md:flex-row items-center">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 md:pt-36 md:pb-32 flex flex-col md:flex-row items-center">
                     <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -92,7 +92,7 @@ const Home = () => {
                         <div className="inline-block px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-100 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-medium text-sm mb-6 shadow-sm">
                             🚀 Revolutionizing Collaborative Learning
                         </div>
-                        <h1 className="text-6xl md:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-tight tracking-tight font-display">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-tight tracking-tight font-display">
                             <span className="font-logo">Cohort</span> <br />
                             <span className="text-gradient">Master Your Studies Together</span>
                         </h1>
@@ -314,9 +314,9 @@ const Home = () => {
                             <div>
                                 <h4 className="font-bold text-gray-900 mb-4">Legal</h4>
                                 <ul className="space-y-2 text-sm text-gray-600">
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Terms of Service</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Cookie Policy</a></li>
+                                    <li><Link to="/privacy" className="hover:text-indigo-600 transition-colors">Privacy Policy</Link></li>
+                                    <li><Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms of Service</Link></li>
+                                    <li><Link to="/cookie-policy" className="hover:text-indigo-600 transition-colors">Cookie Policy</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -355,7 +355,7 @@ const Home = () => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-80px)] p-8 pt-32">
+        <div className="min-h-[calc(100vh-80px)] p-4 pt-24 md:p-8 md:pt-32">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-10 flex justify-between items-end">

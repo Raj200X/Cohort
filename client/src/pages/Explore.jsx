@@ -39,12 +39,12 @@ const Explore = () => {
                 transition={{ duration: 0.5 }}
                 className="mb-10 text-center"
             >
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-sm font-semibold mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 rounded-full text-sm font-semibold mb-4">
                     <Compass size={16} />
                     <span>Discover</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-display">Explore Study Rooms</h1>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">Find the perfect environment to focus, collaborate, and learn with others.</p>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 font-display">Explore Study Rooms</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Find the perfect environment to focus, collaborate, and learn with others.</p>
             </motion.div>
 
             {/* Search */}
@@ -60,25 +60,25 @@ const Explore = () => {
                 <input
                     type="text"
                     placeholder="Search for topics, rooms, or tags..."
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-lg"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-lg bg-white dark:bg-white/5 text-gray-900 dark:text-gray-100 placeholder-gray-500"
                 />
             </motion.div>
 
             {/* Categories */}
             <div className="mb-16">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Browse by Category</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">Browse by Category</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {categories.map((cat, idx) => (
                         <motion.div
                             key={idx}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
+                            className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
                         >
-                            <div className={`p - 3 rounded - full ${cat.color} `}>
+                            <div className={`p-3 rounded-full ${cat.color} dark:bg-white/10 dark:text-indigo-300`}>
                                 {getIcon(cat.icon)}
                             </div>
-                            <span className="font-semibold text-gray-700">{cat.name}</span>
+                            <span className="font-semibold text-gray-700 dark:text-gray-200">{cat.name}</span>
                         </motion.div>
                     ))}
                 </div>
@@ -86,24 +86,24 @@ const Explore = () => {
 
             {/* Trending */}
             <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Trending Now</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">Trending Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {trendingRooms.map((room) => (
                         <motion.div
                             key={room._id}
                             whileHover={{ y: -5 }}
-                            onClick={() => navigate(`/ room / ${room.roomId} `)}
-                            className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer"
+                            onClick={() => navigate(`/room/${room.roomId}`)}
+                            className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl transition-all cursor-pointer"
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <span className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-md font-bold uppercase">General</span>
-                                <div className="flex items-center gap-1 text-gray-500 text-sm">
+                                <span className="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-1 rounded-md font-bold uppercase">General</span>
+                                <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
                                     <Users size={14} />
                                     <span>{room.participants?.length || 0}</span>
                                 </div>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">{room.name}</h3>
-                            <button className="w-full py-2 mt-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">Join Room</button>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{room.name}</h3>
+                            <button className="w-full py-2 mt-2 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors">Join Room</button>
                         </motion.div>
                     ))}
                 </div>

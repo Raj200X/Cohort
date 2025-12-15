@@ -88,7 +88,7 @@ const Community = () => {
                 {/* Main Feed */}
                 <div className="md:col-span-2 space-y-6">
                     {/* Create Post Input */}
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
+                    <div className="glass-card p-6 rounded-2xl flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden">
                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'Guest'}`} alt="avatar" />
                         </div>
@@ -96,7 +96,7 @@ const Community = () => {
                             <input
                                 type="text"
                                 placeholder="Share something with the community..."
-                                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all mb-3"
+                                className="w-full bg-gray-50 dark:bg-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all mb-3"
                                 value={newPostContent}
                                 onChange={(e) => setNewPostContent(e.target.value)}
                             />
@@ -106,7 +106,7 @@ const Community = () => {
                                     <input
                                         type="text"
                                         placeholder="Paste image URL here..."
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
+                                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
                                         value={imageUrl}
                                         onChange={(e) => setImageUrl(e.target.value)}
                                     />
@@ -137,7 +137,7 @@ const Community = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 layout
-                                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+                                className="glass-card p-6 rounded-2xl hover:shadow-md transition-shadow duration-300"
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ const Community = () => {
 
                 {/* Sidebar */}
                 <div className="space-y-6 hidden md:block">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm sticky top-28">
+                    <div className="glass p-6 rounded-2xl sticky top-28">
                         <h3 className="font-bold text-gray-900 mb-4">Popular Topics</h3>
                         <ul className="space-y-2">
                             {["#ExamPrep", "#LoFiBeats", "#ComputerScience", "#MentalHealth", "#Productivity"].map((topic, i) => (

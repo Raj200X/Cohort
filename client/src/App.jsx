@@ -6,12 +6,14 @@ import { SocketProvider } from './context/SocketContext';
 import Navbar from './components/Navbar';
 import AnimatedRoutes from './components/AnimatedRoutes';
 
+import { DarkModeProvider } from './context/DarkModeContext';
+
 function AppContent() {
   const location = useLocation();
   const isRoomPage = location.pathname.startsWith('/room/');
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
       {!isRoomPage && <Navbar />}
       <AnimatedRoutes />
     </div>
@@ -52,11 +54,13 @@ function App() {
   }, []);
 
   return (
-    <SocketProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </SocketProvider>
+    <DarkModeProvider>
+      <SocketProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </SocketProvider>
+    </DarkModeProvider>
   );
 }
 
