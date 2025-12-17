@@ -10,6 +10,17 @@ const Home = () => {
     const [roomName, setRoomName] = useState('');
     const [roomId, setRoomId] = useState('');
     const [rooms, setRooms] = useState([]);
+
+    // Room Settings State
+    const [roomPassword, setRoomPassword] = useState('');
+    const [timerDuration, setTimerDuration] = useState('');
+    const [isPrivate, setIsPrivate] = useState(false);
+    const [isTimerEnabled, setIsTimerEnabled] = useState(false);
+
+    // Join Modal State
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [pendingRoomId, setPendingRoomId] = useState(null);
+    const [joinPassword, setJoinPassword] = useState('');
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
     const [dashboardData, setDashboardData] = useState({
@@ -43,7 +54,9 @@ const Home = () => {
         try {
             const res = await axios.post(`${API_URL}/api/rooms/create`, {
                 name: roomName,
-                userId: user._id
+                userId: user._id,
+                password: isPrivate ? roomPassword : null,
+                settings: isTimerEnabled ? { timerDuration: parseInt(timerDuration) } : null
             });
             fetchRooms(); // Refresh list
             navigate(`/room/${res.data.roomId}`);
@@ -53,18 +66,43 @@ const Home = () => {
         }
     };
 
-    const joinRoom = async () => {
-        if (!roomId.trim()) return;
+    const handleJoinClick = (room) => {
+        if (room.hasPassword) {
+            setPendingRoomId(room.roomId);
+            setShowPasswordModal(true);
+        } else {
+            joinRoom(room.roomId);
+        }
+    };
+
+    const joinRoom = async (idOrEvent, password = null) => {
+        const id = typeof idOrEvent === 'string' ? idOrEvent : roomId;
+        if (!id?.trim()) return;
+
         try {
             const res = await axios.post(`${API_URL}/api/rooms/join`, {
-                roomId,
-                userId: user._id
+                roomId: id,
+                userId: user._id,
+                password: password
             });
             navigate(`/room/${res.data.roomId}`);
         } catch (err) {
             console.error(err);
-            alert('Room not found or error joining');
+            if (err.response && err.response.status === 403) {
+                // If we tried to join via ID input without knowing it was private
+                setPendingRoomId(id);
+                setShowPasswordModal(true);
+            } else {
+                alert(err.response?.data?.message || 'Room not found or error joining');
+            }
         }
+    };
+
+    const submitPassword = () => {
+        joinRoom(pendingRoomId, joinPassword);
+        setShowPasswordModal(false);
+        setJoinPassword('');
+        setPendingRoomId(null);
     };
 
 
@@ -144,8 +182,8 @@ const Home = () => {
                 <div className="py-24 relative overflow-hidden">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                         <div className="text-center mb-16">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-4 font-display">Everything you need to study effectively</h2>
-                            <p className="text-xl text-gray-600">Powerful tools designed for modern students.</p>
+                            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 font-display">Everything you need to study effectively</h2>
+                            <p className="text-xl text-gray-600 dark:text-gray-300">Powerful tools designed for modern students.</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8">
@@ -165,8 +203,8 @@ const Home = () => {
                                     <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center text-3xl mb-6 text-white shadow-lg shadow-indigo-500/20">
                                         {feature.icon}
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-3 font-display">{feature.title}</h3>
-                                    <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 font-display">{feature.title}</h3>
+                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{feature.desc}</p>
                                 </motion.div>
                             ))}
                         </div>
@@ -174,7 +212,7 @@ const Home = () => {
                 </div>
 
                 {/* Stats Section */}
-                <div className="py-20 bg-white/50 backdrop-blur-sm border-y border-white/20">
+                <div className="py-20 bg-white/50 dark:bg-white/5 backdrop-blur-sm border-y border-white/20 dark:border-white/5">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                             {[
@@ -184,8 +222,8 @@ const Home = () => {
                                 { label: "Hours Studied", value: "1M+" }
                             ].map((stat, idx) => (
                                 <div key={idx}>
-                                    <div className="text-4xl md:text-5xl font-bold text-indigo-600 mb-2 font-display">{stat.value}</div>
-                                    <div className="text-gray-600 font-medium">{stat.label}</div>
+                                    <div className="text-4xl md:text-5xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 font-display">{stat.value}</div>
+                                    <div className="text-gray-600 dark:text-gray-300 font-medium">{stat.label}</div>
                                 </div>
                             ))}
                         </div>
@@ -196,8 +234,8 @@ const Home = () => {
                 <div className="py-24 relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-16">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-4 font-display">How Cohort Works</h2>
-                            <p className="text-xl text-gray-600">Start learning together in three simple steps.</p>
+                            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 font-display">How Cohort Works</h2>
+                            <p className="text-xl text-gray-600 dark:text-gray-300">Start learning together in three simple steps.</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-12 relative">
@@ -213,8 +251,8 @@ const Home = () => {
                                     <div className="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center text-xl font-bold text-indigo-600 shadow-md mb-6 border border-indigo-100">
                                         {item.step}
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-3 font-display">{item.title}</h3>
-                                    <p className="text-gray-600">{item.desc}</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 font-display">{item.title}</h3>
+                                    <p className="text-gray-600 dark:text-gray-300">{item.desc}</p>
                                 </div>
                             ))}
                         </div>
@@ -226,8 +264,8 @@ const Home = () => {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-500/5 rounded-full blur-3xl -z-10"></div>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-16">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-4 font-display">Loved by Students</h2>
-                            <p className="text-xl text-gray-600">Join thousands of students achieving their goals.</p>
+                            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 font-display">Loved by Students</h2>
+                            <p className="text-xl text-gray-600 dark:text-gray-300">Join thousands of students achieving their goals.</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8">
@@ -244,8 +282,8 @@ const Home = () => {
                                             {testimonial.name.charAt(0)}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">{testimonial.name}</h4>
-                                            <p className="text-xs text-gray-500">{testimonial.role}</p>
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm">{testimonial.name}</h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -276,7 +314,7 @@ const Home = () => {
                 </div>
 
                 {/* Footer */}
-                <footer className="bg-white/50 backdrop-blur-md border-t border-gray-200 pt-16 pb-8">
+                <footer className="bg-white/50 dark:bg-white/5 backdrop-blur-md border-t border-gray-200 dark:border-white/10 pt-16 pb-8">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid md:grid-cols-4 gap-12 mb-12">
                             <div className="col-span-1 md:col-span-1">
@@ -284,32 +322,15 @@ const Home = () => {
                                     <div className="w-10 h-10 bg-white/50 rounded-lg flex items-center justify-center shadow-md">
                                         <Logo className="w-8 h-8" />
                                     </div>
-                                    <span className="text-2xl font-bold text-gray-800 font-logo">Cohort</span>
+                                    <span className="text-2xl font-bold text-gray-800 dark:text-white font-logo">Cohort</span>
                                 </div>
-                                <p className="text-gray-500 text-sm leading-relaxed">
+                                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
                                     Making collaborative learning accessible, engaging, and effective for students worldwide.
                                 </p>
                             </div>
 
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-4">Platform</h4>
-                                <ul className="space-y-2 text-sm text-gray-600">
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Features</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Pricing</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Download</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Integrations</a></li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-4">Resources</h4>
-                                <ul className="space-y-2 text-sm text-gray-600">
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Blog</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Community</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Help Center</a></li>
-                                    <li><a href="#" className="hover:text-indigo-600 transition-colors">Guidelines</a></li>
-                                </ul>
-                            </div>
+                            <div className="hidden md:block"></div>
+                            <div className="hidden md:block"></div>
 
                             <div>
                                 <h4 className="font-bold text-gray-900 mb-4">Legal</h4>
@@ -396,6 +417,46 @@ const Home = () => {
                                             Create
                                         </button>
                                     </div>
+
+                                    {/* Advanced Settings Toggles */}
+                                    <div className="flex gap-4 text-sm mt-3">
+                                        <button
+                                            onClick={() => setIsPrivate(!isPrivate)}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${isPrivate ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-transparent text-gray-500 dark:text-gray-400 border-gray-300 dark:border-white/10'}`}
+                                        >
+                                            {isPrivate ? '🔒 Private' : '🔓 Public'}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsTimerEnabled(!isTimerEnabled)}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${isTimerEnabled ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-transparent text-gray-500 dark:text-gray-400 border-gray-300 dark:border-white/10'}`}
+                                        >
+                                            {isTimerEnabled ? '⏱️ Timer On' : '⏱️ Timer Off'}
+                                        </button>
+                                    </div>
+
+                                    {/* Conditional Inputs */}
+                                    {(isPrivate || isTimerEnabled) && (
+                                        <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            {isPrivate && (
+                                                <input
+                                                    type="password"
+                                                    placeholder="Set Password"
+                                                    className="px-4 py-2 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                                                    value={roomPassword}
+                                                    onChange={(e) => setRoomPassword(e.target.value)}
+                                                />
+                                            )}
+                                            {isTimerEnabled && (
+                                                <input
+                                                    type="number"
+                                                    placeholder="Mins"
+                                                    className="px-4 py-2 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                                                    value={timerDuration}
+                                                    onChange={(e) => setTimerDuration(e.target.value)}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="space-y-4">
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Join Existing Room</label>
@@ -423,13 +484,16 @@ const Home = () => {
                                     <p className="text-gray-500 dark:text-gray-400">No active sessions. Create one to get started!</p>
                                 ) : (
                                     rooms.map((room) => (
-                                        <div key={room._id} className="glass p-5 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg transition-all group cursor-pointer flex justify-between items-center" onClick={() => navigate(`/room/${room.roomId}`)}>
+                                        <div key={room._id} className="glass p-5 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg transition-all group cursor-pointer flex justify-between items-center" onClick={() => handleJoinClick(room)}>
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xl">
                                                     📹
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">{room.name || 'Untitled Room'}</h3>
+                                                    <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors flex items-center gap-2">
+                                                        {room.name || 'Untitled Room'}
+                                                        {room.hasPassword && <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full">🔒 Private</span>}
+                                                    </h3>
                                                     <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                                                         {new Date(room.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {room.participants?.length || 0} members
                                                     </p>
@@ -510,6 +574,38 @@ const Home = () => {
                     </div>
                 </div>
             </div>
+            {/* Password Modal */}
+            {showPasswordModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#1a1b2e] p-6 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100 dark:border-white/10">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Enter Room Password</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This room is private. Please enter the password to join.</p>
+                        <input
+                            type="password"
+                            autoFocus
+                            placeholder="Password"
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white mb-4"
+                            value={joinPassword}
+                            onChange={(e) => setJoinPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && submitPassword()}
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowPasswordModal(false)}
+                                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitPassword}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                            >
+                                Join Room
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

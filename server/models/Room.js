@@ -18,6 +18,14 @@ const roomSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    password: {
+        type: String, // Optional: if set, room is private
+        select: true
+    },
+    settings: {
+        timerDuration: { type: Number, default: 0 }, // in minutes
+        timerStartTime: { type: Date }
     }
 }, { timestamps: true });
 

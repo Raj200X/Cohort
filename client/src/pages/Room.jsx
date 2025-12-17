@@ -40,6 +40,8 @@ const Room = () => {
     const [screenStream, setScreenStream] = useState(null); // Add state for screen stream
     const [activeTab, setActiveTab] = useState('chat');
 
+    const [timeLeft, setTimeLeft] = useState(null);
+
     // Local State
     const [isMicOn, setIsMicOn] = useState(() => {
         const saved = localStorage.getItem('isMicOn');
@@ -69,6 +71,39 @@ const Room = () => {
         fetchRoom();
     }, [roomId]);
 
+    // Timer Logic
+    useEffect(() => {
+        if (!room?.settings?.timerDuration || !room?.settings?.timerStartTime) return;
+
+        const durationMs = room.settings.timerDuration * 60 * 1000;
+        const startTime = new Date(room.settings.timerStartTime).getTime();
+        const endTime = startTime + durationMs;
+
+        const updateTimer = () => {
+            const now = Date.now();
+            const diff = endTime - now;
+
+            if (diff <= 0) {
+                setTimeLeft("00:00");
+                return;
+            }
+
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        };
+
+        const interval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+
+        return () => clearInterval(interval);
+    }, [room]);
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+    };
+
     // Save media preferences
     useEffect(() => {
         localStorage.setItem('isMicOn', JSON.stringify(isMicOn));
@@ -77,6 +112,14 @@ const Room = () => {
     useEffect(() => {
         localStorage.setItem('isVideoOn', JSON.stringify(isVideoOn));
     }, [isVideoOn]);
+
+    // Cleanup peers on unmount
+    useEffect(() => {
+        return () => {
+            peersRef.current.forEach(p => p.peer.destroy());
+            peersRef.current = [];
+        };
+    }, []);
 
     // --- Socket Logic ---
     useEffect(() => {
@@ -174,7 +217,13 @@ const Room = () => {
                 }));
             });
         });
-        return () => { }; // Cleanup
+        return () => {
+            socket.off("user-connected");
+            socket.off("user-disconnected");
+            socket.off("call-user");
+            socket.off("call-accepted");
+            socket.off("media-toggled");
+        };
     }, [socket, roomId]);
 
     // --- WebRTC Helpers ---
@@ -435,6 +484,16 @@ const Room = () => {
                     <div><h1 className="font-semibold text-sm md:text-base">{room.name}</h1><span className="text-xs text-gray-400">ID: {room.roomId}</span></div>
                 </div>
                 <div className="flex items-center gap-4">
+                    {/* Timer Display */}
+                    {timeLeft && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg font-mono font-bold animate-pulse">
+                            <span>⏱️ {timeLeft}</span>
+                        </div>
+                    )}
+
+                    <button onClick={copyLink} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm border border-white/5 transition-colors">
+                        <span>🔗 Copy Link</span>
+                    </button>
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'Guest'}`} alt="Profile" className="w-10 h-10 rounded-full border-2 border-white/20" />
                 </div>
             </div>
