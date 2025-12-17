@@ -115,9 +115,9 @@ const Home = () => {
                         transition={{ duration: 0.8, delay: 0.2 }}
                         className="md:w-1/2 flex justify-center relative"
                     >
-                        <div className="absolute top-0 right-0 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob dark:opacity-40"></div>
-                        <div className="absolute top-0 -left-4 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 dark:opacity-40"></div>
-                        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 dark:opacity-40"></div>
+                        <div className="absolute top-0 right-0 w-72 h-72 bg-purple-300 dark:bg-purple-500/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70 animate-blob dark:opacity-100"></div>
+                        <div className="absolute top-0 -left-4 w-72 h-72 bg-indigo-300 dark:bg-indigo-500/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70 animate-blob animation-delay-2000 dark:opacity-100"></div>
+                        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 dark:bg-pink-500/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70 animate-blob animation-delay-4000 dark:opacity-100"></div>
 
                         <div className="relative glass-card p-8 rounded-3xl border border-white/40 dark:border-white/10 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
                             <div className="flex items-center gap-4 mb-6">

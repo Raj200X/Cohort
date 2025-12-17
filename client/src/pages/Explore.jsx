@@ -54,14 +54,17 @@ const Explore = () => {
                 transition={{ delay: 0.1 }}
                 className="max-w-2xl mx-auto mb-16 relative"
             >
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="text-gray-400" size={20} />
+                <div className="glass rounded-2xl relative overflow-hidden flex items-center">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                        <Search className="text-gray-400" size={20} />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search for topics, rooms, or tags..."
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl border-none outline-none focus:ring-0 transition-all text-lg bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 relative z-10"
+                    />
                 </div>
-                <input
-                    type="text"
-                    placeholder="Search for topics, rooms, or tags..."
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-lg bg-white dark:bg-white/5 text-gray-900 dark:text-gray-100 placeholder-gray-500"
-                />
             </motion.div>
 
             {/* Categories */}
@@ -73,9 +76,10 @@ const Explore = () => {
                             key={idx}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
+                            className="glass p-6 rounded-2xl hover:shadow-lg transition-all text-center group cursor-pointer border border-gray-100 dark:border-white/5 relative overflow-hidden"
                         >
-                            <div className={`p-3 rounded-full ${cat.color} dark:bg-white/10 dark:text-indigo-300`}>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl -mr-8 -mt-8"></div>
+                            <div className="bg-indigo-50 dark:bg-indigo-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
                                 {getIcon(cat.icon)}
                             </div>
                             <span className="font-semibold text-gray-700 dark:text-gray-200">{cat.name}</span>
@@ -93,8 +97,9 @@ const Explore = () => {
                             key={room._id}
                             whileHover={{ y: -5 }}
                             onClick={() => navigate(`/room/${room.roomId}`)}
-                            className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl transition-all cursor-pointer"
+                            className="glass p-6 rounded-2xl hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
                         >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                             <div className="flex justify-between items-start mb-4">
                                 <span className="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-1 rounded-md font-bold uppercase">General</span>
                                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">

@@ -59,8 +59,8 @@ const Insights = () => {
                     <BarChart2 size={16} />
                     <span>Analytics</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 font-display">Your Insights</h1>
-                <p className="text-lg text-gray-600">Track your progress and study habits over time.</p>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2 font-display">Your Insights</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-300">Track your progress and study habits over time.</p>
             </motion.div>
 
             {/* Stats Grid */}
@@ -76,15 +76,16 @@ const Insights = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-shadow duration-300"
+                        className="glass p-6 rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 relative overflow-hidden"
                     >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl -mr-8 -mt-8"></div>
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p - 3 rounded - xl ${stat.color} `}>
                                 {stat.icon}
                             </div>
                             {idx === 3 && <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">ACTIVE</span>}
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900 mb-1 font-display">{stat.value} <span className="text-sm text-gray-400 font-normal">{stat.unit}</span></h3>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1 font-display">{stat.value} <span className="text-sm text-gray-400 font-normal">{stat.unit}</span></h3>
                         <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
                     </motion.div>
                 ))}
@@ -93,9 +94,10 @@ const Insights = () => {
             {/* Main Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Graph */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="lg:col-span-2 glass p-8 rounded-3xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
                     <div className="flex justify-between items-center mb-8">
-                        <h3 className="text-xl font-bold text-gray-800">Activity This Week</h3>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white">Activity This Week</h3>
                         <select className="bg-gray-50 border-none rounded-lg text-sm text-gray-500 font-medium outline-none">
                             <option>Last 7 Days</option>
                             <option>Last Month</option>
@@ -109,8 +111,9 @@ const Insights = () => {
 
                 {/* Side Panel */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar size={18} className="text-indigo-500" /> Upcoming Goals</h3>
+                    <div className="glass p-6 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2"><Calendar size={18} className="text-indigo-500" /> Upcoming Goals</h3>
                         <ul className="space-y-4">
                             {data.goals.map((goal, i) => (
                                 <li key={i} className="flex items-start gap-3">
@@ -118,7 +121,7 @@ const Insights = () => {
                                         {goal.completed && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
                                     <div>
-                                        <p className={`text - sm font - medium ${goal.completed ? 'text-gray-400 line-through' : 'text-gray-700'} `}>{goal.title}</p>
+                                        <p className={`text - sm font - medium ${goal.completed ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-white'} `}>{goal.title}</p>
                                         <p className="text-xs text-gray-400">{new Date(goal.deadline).toLocaleDateString()}</p>
                                     </div>
                                 </li>
