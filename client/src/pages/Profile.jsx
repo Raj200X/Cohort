@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Camera, Save, RefreshCw } from 'lucide-react';
+import { User, Mail, Lock, Camera, Save, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import axios from 'axios';
 import API_URL from '../config';
 
@@ -16,6 +16,7 @@ const Profile = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
     // Preset avatars from DiceBear
     const presetAvatars = [
@@ -102,7 +103,7 @@ const Profile = () => {
                     <p className="text-indigo-100 text-sm mb-6">Student</p>
 
                     <div className="flex gap-2">
-                        {['https://api.dicebear.com/7.x/notionists/svg?seed=Felix', 'https://api.dicebear.com/7.x/notionists/svg?seed=Aneka', 'https://api.dicebear.com/7.x/notionists/svg?seed=Mila'].map((url, i) => (
+                        {presetAvatars.map((url, i) => (
                             <img
                                 key={i}
                                 src={url}
@@ -130,7 +131,7 @@ const Profile = () => {
                 </div>
 
                 {/* Right Panel: Edit Form */}
-                <div className="md:w-2/3 p-8 md:p-12 bg-gray-50/50 dark:bg-black/20">
+                <div className="md:w-2/3 p-8 md:p-12 bg-white/50 dark:bg-indigo-950/20 backdrop-blur-md">
                     <div className="flex justify-between items-center mb-8">
                         <h3 className="text-xl font-bold text-gray-800 dark:text-white">Profile Settings</h3>
                         <User className="text-gray-400" size={20} />
