@@ -12,6 +12,11 @@ export default defineConfig({
     nodePolyfills({
       // Whether to polyfill `node:` protocol imports.
       protocolImports: true,
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
     }),
   ],
   resolve: {

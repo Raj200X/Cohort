@@ -179,10 +179,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('call-user', (data) => {
+        console.log(`[Server] Relaying call-user from ${data.from} to ${data.userToCall}`);
         io.to(data.userToCall).emit('call-user', { signal: data.signalData, from: data.from, name: data.name });
     });
 
     socket.on('answer-call', (data) => {
+        console.log(`[Server] Relaying answer-call from ${socket.id} to ${data.to}`);
         io.to(data.to).emit('call-accepted', { signal: data.signal, from: socket.id, name: data.name }); // Pass name back
     });
 

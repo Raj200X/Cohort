@@ -227,44 +227,70 @@ const Room = () => {
     }, [socket, roomId]);
 
     // --- WebRTC Helpers ---
+    // --- WebRTC Helpers ---
     function createPeer(userToCall, callerID, stream) {
-        const peer = new Peer({ initiator: true, trickle: false, stream });
+        console.log(`[Room] createPeer (Initiator) -> Calling ${userToCall}`);
+        const peer = new Peer({
+            initiator: true,
+            trickle: false,
+            stream,
+            config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+        });
+
         peer.on("signal", signal => {
             console.log("SENDING SIGNAL: call-user", { userToCall, from: callerID });
             socket.emit("call-user", { userToCall, signalData: signal, from: callerID, name: user?.username || 'Guest' });
         });
+
         peer.on("stream", remoteStream => {
-            console.log("STREAM RECEIVED (createPeer)");
-            // Update stream in state
+            console.log("STREAM RECEIVED (createPeer)", remoteStream);
             setPeers(users => users.map(u => u.peerID === userToCall ? { ...u, stream: remoteStream } : u));
-            // Update ref
             const p = peersRef.current.find(u => u.peerID === userToCall);
             if (p) p.stream = remoteStream;
         });
+
         peer.on("error", err => {
             console.error("PEER ERROR (createPeer):", err);
         });
+
+        peer.on("connect", () => {
+            console.log("PEER CONNECTED (createPeer)!");
+        });
+
         return peer;
     }
 
     function addPeer(incomingSignal, callerID, stream) {
-        const peer = new Peer({ initiator: false, trickle: false, stream });
+        console.log(`[Room] addPeer (Receiver) -> Answering ${callerID}`);
+        const peer = new Peer({
+            initiator: false,
+            trickle: false,
+            stream,
+            config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+        });
+
         peer.on("signal", signal => {
             console.log("SENDING SIGNAL: answer-call", { to: callerID });
             socket.emit("answer-call", { signal, to: callerID, name: user?.username || 'Guest' });
         });
+
         peer.signal(incomingSignal);
+
         peer.on("stream", remoteStream => {
-            console.log("STREAM RECEIVED (addPeer)");
-            // Update stream in state
+            console.log("STREAM RECEIVED (addPeer)", remoteStream);
             setPeers(users => users.map(u => u.peerID === callerID ? { ...u, stream: remoteStream } : u));
-            // Update ref
             const p = peersRef.current.find(u => u.peerID === callerID);
             if (p) p.stream = remoteStream;
         });
+
         peer.on("error", err => {
             console.error("PEER ERROR (addPeer):", err);
         });
+
+        peer.on("connect", () => {
+            console.log("PEER CONNECTED (addPeer)!");
+        });
+
         return peer;
     }
 
