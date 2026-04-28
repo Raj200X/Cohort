@@ -499,45 +499,58 @@ const Room = () => {
         }
     };
 
-    // --- Spotlight Logic ---
-    const spotlightUser = useMemo(() => {
-        // 1. Priority: Screen Share (Peers)
-        const sharingPeer = peers.find(p => p.isScreenSharing);
-        if (sharingPeer) return { type: 'peer', data: sharingPeer, reason: 'Screen Sharing' };
+    // --- Dynamic Grid Logic ---
+    // Build a flat list of all participants (local first, then peers)
+    const allParticipants = useMemo(() => [
+        {
+            id: 'local',
+            type: 'local',
+            stream: isScreenSharing ? screenStream : localStream,
+            isMuted: true,           // always mute self to prevent echo
+            isCameraOff: !isVideoOn && !isScreenSharing,
+            name: user?.username || 'You',
+            isLocal: true,
+            isScreenSharing
+        },
+        ...peers.map(p => ({
+            id: p.peerID,
+            type: 'peer',
+            stream: p.stream,
+            isMuted: p.isMuted,
+            isCameraOff: p.isCameraOff,
+            name: p.name || 'Guest',
+            isLocal: false,
+            isScreenSharing: p.isScreenSharing
+        }))
+    ], [peers, localStream, screenStream, isVideoOn, isScreenSharing, user]);
 
-        // 2. Priority: Screen Share (Self)
-        if (isScreenSharing) return { type: 'local', reason: 'You are sharing screen' };
+    // Grid column count based on participant count
+    const gridCols = useMemo(() => {
+        const n = allParticipants.length;
+        if (n <= 1) return 1;
+        if (n <= 2) return 2;
+        if (n <= 4) return 2;
+        if (n <= 6) return 3;
+        return 3; // 7+ use spotlight fallback
+    }, [allParticipants.length]);
 
-        // 3. Fallback: Last Joined Peer (simulated active speaker for now)
-        if (peers.length > 0) {
-            return { type: 'peer', data: peers[peers.length - 1], reason: 'Active Speaker' };
-        }
+    // Use spotlight+filmstrip layout for 7+ people
+    const useSpotlightMode = allParticipants.length > 6;
 
-        // 4. Default: Self
-        return { type: 'local', reason: 'You (Active Speaker)' };
-    }, [peers, isScreenSharing]);
-
-    // List of "other" users for the filmstrip
-    const filmstripUsers = useMemo(() => {
-        let users = [];
-        // If spotlight is a peer, show ME in filmstrip + other peers
-        if (spotlightUser.type === 'peer') {
-            users.push({ type: 'local', isMuted: !isMicOn, isCameraOff: !isVideoOn, name: 'You' });
-            users.push(...peers.filter(p => p.peerID !== spotlightUser.data.peerID).map(p => ({ type: 'peer', data: p })));
-        } else {
-            // Local is spotlight, show all peers in filmstrip
-            users.push(...peers.map(p => ({ type: 'peer', data: p })));
-        }
-        return users;
-    }, [peers, spotlightUser, isMicOn, isVideoOn]);
+    // Spotlight for large rooms: screen-sharing peer > self sharing > last peer > self
+    const spotlightParticipant = useMemo(() => {
+        if (!useSpotlightMode) return null;
+        const sharingPeer = allParticipants.find(p => !p.isLocal && p.isScreenSharing);
+        if (sharingPeer) return sharingPeer;
+        if (isScreenSharing) return allParticipants[0];
+        return allParticipants[allParticipants.length - 1];
+    }, [allParticipants, useSpotlightMode, isScreenSharing]);
 
     if (!room) return <div className="h-screen bg-[#1c1c1e] text-white flex items-center justify-center">Loading...</div>;
 
     const activeStyle = "bg-[#ff4f4f] text-white shadow-lg shadow-red-900/30";
     const inactiveStyle = "bg-white/10 text-white hover:bg-white/20";
 
-    // Determine local display stream
-    const localDisplayStream = isScreenSharing ? screenStream : localStream;
 
     return (
         <div className="h-screen bg-[#1c1c1e] text-white flex flex-col overflow-hidden font-sans">
@@ -565,93 +578,138 @@ const Room = () => {
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden p-4">
                 <ResizablePanelGroup direction="horizontal" className="rounded-lg border border-white/5">
-                    {/* Left Panel: Spotlight + Filmstrip */}
-                    <ResizablePanel defaultSize={75} minSize={50} className="flex flex-col gap-4 p-2">
-
-                        {/* Filmstrip (Top) - Only existing users, no placeholders */}
-                        {filmstripUsers.length > 0 && (
-                            <div className="flex gap-4 h-32 shrink-0 overflow-x-auto pb-2 w-full">
-                                {filmstripUsers.map((u, i) => (
-                                    <div key={u.type === 'local' ? 'me' : u.data.peerID} className="min-w-[200px] w-1/4 bg-gray-800 rounded-xl overflow-hidden relative border border-white/5 shrink-0">
-                                        {u.type === 'local' ? (
-                                            <>
+                    {/* Left Panel: Dynamic Video Grid */}
+                    <ResizablePanel defaultSize={75} minSize={50} className="flex flex-col p-2">
+                        {isWhiteboardOpen ? (
+                            /* Whiteboard Mode */
+                            <div className="flex-1 bg-white relative rounded-2xl overflow-hidden">
+                                <Whiteboard roomId={roomId} />
+                                <button
+                                    onClick={() => setIsWhiteboardOpen(false)}
+                                    className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg z-50 hover:bg-red-600 transition"
+                                >
+                                    <ChevronDown className="transform rotate-180" size={20} />
+                                </button>
+                            </div>
+                        ) : useSpotlightMode ? (
+                            /* Spotlight Mode (7+ participants) */
+                            <div className="flex flex-col gap-3 h-full">
+                                {/* Filmstrip */}
+                                <div className="flex gap-3 h-28 shrink-0 overflow-x-auto">
+                                    {allParticipants
+                                        .filter(p => p.id !== spotlightParticipant?.id)
+                                        .map(p => (
+                                            <div key={p.id} className="min-w-[160px] relative bg-gray-900 rounded-xl overflow-hidden border border-white/10 shrink-0">
                                                 <Video
-                                                    stream={localDisplayStream}
-                                                    isMuted={true} // Always mute local video to prevent echo
-                                                    isCameraOff={!isVideoOn && !isScreenSharing}
-                                                    className={`w-full h-full object-cover ${isScreenSharing ? '' : 'transform scale-x-[-1]'}`}
+                                                    stream={p.stream}
+                                                    isMuted={p.isMuted}
+                                                    isCameraOff={p.isCameraOff}
+                                                    className={`w-full h-full object-contain ${p.isLocal && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
                                                 />
-                                                <div className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 bg-indigo-600 rounded">YOU</div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Video stream={u.data.stream} className="w-full h-full object-cover" isMuted={u.data.isMuted} isCameraOff={u.data.isCameraOff} />
-                                                <div className="absolute bottom-2 left-2 text-[10px] font-medium px-2 py-0.5 bg-black/50 rounded backdrop-blur-sm truncate max-w-[80%]">{u.data.name}</div>
-                                            </>
-                                        )}
+                                                <div className="absolute bottom-1.5 left-2 text-[10px] font-bold px-1.5 py-0.5 bg-black/60 rounded text-white truncate max-w-[90%]">
+                                                    {p.isLocal ? <span className="text-indigo-300">YOU</span> : p.name}
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                                {/* Main spotlight tile */}
+                                {spotlightParticipant && (
+                                    <div className="flex-1 relative bg-gray-900 rounded-2xl overflow-hidden border border-white/5">
+                                        <Video
+                                            stream={spotlightParticipant.stream}
+                                            isMuted={spotlightParticipant.isMuted}
+                                            isCameraOff={spotlightParticipant.isCameraOff}
+                                            className={`w-full h-full object-contain ${spotlightParticipant.isLocal && !spotlightParticipant.isScreenSharing ? 'scale-x-[-1]' : ''}`}
+                                        />
+                                        <div className="absolute top-4 right-4 bg-indigo-600/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-sm font-bold shadow-lg z-30">
+                                            {spotlightParticipant.isLocal ? user?.username || 'You' : spotlightParticipant.name}
+                                            {spotlightParticipant.isScreenSharing && <span className="font-normal opacity-80 text-xs ml-2">(Screen)</span>}
+                                        </div>
                                     </div>
-                                ))}
+                                )}
+                            </div>
+                        ) : (
+                            /* Dynamic Grid Mode (1–6 participants) */
+                            <div
+                                className={`flex-1 grid gap-3 ${
+                                    gridCols === 1 ? 'grid-cols-1' :
+                                    gridCols === 2 ? 'grid-cols-2' :
+                                    'grid-cols-3'
+                                }`}
+                                style={{ gridAutoRows: '1fr' }}
+                            >
+                                {allParticipants.map((p, index) => {
+                                    // Center last tile when it's alone in a row
+                                    const isLastOdd = allParticipants.length % gridCols !== 0 && index === allParticipants.length - 1;
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className="relative bg-gray-900 rounded-2xl overflow-hidden border border-white/5 shadow-xl"
+                                            style={isLastOdd && gridCols === 2 ? { gridColumn: '1 / -1', maxWidth: '50%', width: '100%', margin: '0 auto' } : {}}
+                                        >
+                                            {/* Video */}
+                                            <Video
+                                                stream={p.stream}
+                                                isMuted={p.isMuted}
+                                                isCameraOff={p.isCameraOff}
+                                                className={`w-full h-full ${
+                                                    /* object-contain: shows full portrait phone video without cropping */
+                                                    'object-contain'
+                                                } ${p.isLocal && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
+                                            />
+
+                                            {/* Camera off avatar */}
+                                            {p.isCameraOff && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-2xl font-bold text-white shadow-xl">
+                                                        {(p.name || 'G')[0].toUpperCase()}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Name badge */}
+                                            <div className="absolute bottom-3 left-3 text-xs font-semibold px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-white truncate max-w-[60%]">
+                                                {p.isLocal ? <span className="text-indigo-300">YOU</span> : p.name}
+                                            </div>
+
+                                            {/* Mic/Cam status icons */}
+                                            <div className="absolute top-3 right-3 flex gap-1.5">
+                                                {p.isMuted && !p.isLocal && (
+                                                    <div className="bg-red-500/90 p-1.5 rounded-full backdrop-blur-sm">
+                                                        <MicOff size={11} className="text-white" />
+                                                    </div>
+                                                )}
+                                                {p.isCameraOff && !p.isLocal && (
+                                                    <div className="bg-red-500/90 p-1.5 rounded-full backdrop-blur-sm">
+                                                        <VideoOff size={11} className="text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Local mic/cam indicator at bottom center */}
+                                            {p.isLocal && (
+                                                <div className="absolute bottom-3 right-3 flex gap-1.5">
+                                                    <div className={`p-1.5 rounded-full backdrop-blur-sm ${isMicOn ? 'bg-white/10' : 'bg-red-500/90'}`}>
+                                                        {isMicOn ? <Mic size={11} className="text-white" /> : <MicOff size={11} className="text-white" />}
+                                                    </div>
+                                                    <div className={`p-1.5 rounded-full backdrop-blur-sm ${isVideoOn ? 'bg-white/10' : 'bg-red-500/90'}`}>
+                                                        {isVideoOn ? <VideoIcon size={11} className="text-white" /> : <VideoOff size={11} className="text-white" />}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Screen sharing badge */}
+                                            {p.isScreenSharing && (
+                                                <div className="absolute top-3 left-3 text-[10px] px-2 py-0.5 bg-indigo-600/90 rounded-full text-white font-medium backdrop-blur-sm">
+                                                    Sharing Screen
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
-
-                        {/* Main Spotlight Area */}
-                        <div className="flex-1 bg-gray-900 rounded-3xl overflow-hidden relative border border-white/5 shadow-2xl w-full flex items-center justify-center">
-                            {isWhiteboardOpen ? (
-                                <div className="w-full h-full bg-white relative">
-                                    <Whiteboard roomId={roomId} />
-                                    <button
-                                        onClick={() => setIsWhiteboardOpen(false)}
-                                        className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg z-50 hover:bg-red-600 transition"
-                                    >
-                                        <ChevronDown className="transform rotate-180" size={20} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    {spotlightUser.type === 'local' ? (
-                                        <div className="w-full h-full relative group">
-                                            <Video
-                                                stream={localDisplayStream}
-                                                isMuted={true}
-                                                isCameraOff={!isVideoOn && !isScreenSharing}
-                                                className={`w-full h-full object-contain ${isScreenSharing ? '' : 'transform scale-x-[-1]'}`}
-                                            />
-                                            {(!isVideoOn || isScreenSharing) && (
-                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                                    {isScreenSharing ? null : <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center text-3xl font-bold">{user?.username?.[0]?.toUpperCase()}</div>}
-                                                </div>
-                                            )}
-                                            {isScreenSharing && (
-                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                                    <p className="text-indigo-400 font-mono bg-black/50 px-4 py-2 rounded">You are sharing your screen</p>
-                                                </div>
-                                            )}
-                                            {/* Local Status Indicators */}
-                                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md px-6 py-2 rounded-full flex items-center gap-4 z-20">
-                                                <div className="flex items-center gap-2 text-sm text-gray-200">{isMicOn ? <Mic size={14} className="text-green-400" /> : <MicOff size={14} className="text-red-400" />} Mic</div>
-                                                <div className="flex items-center gap-2 text-sm text-gray-200">{isVideoOn ? <VideoIcon size={14} className="text-green-400" /> : <VideoOff size={14} className="text-red-400" />} Cam</div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full relative">
-                                            <Video
-                                                key={spotlightUser.data.isScreenSharing ? 'screen' : 'cam'}
-                                                stream={spotlightUser.data.stream}
-                                                className="w-full h-full object-contain"
-                                                isMuted={spotlightUser.data.isMuted}
-                                                isCameraOff={spotlightUser.data.isCameraOff}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="absolute top-4 right-4 bg-indigo-600/90 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold shadow-lg z-30">
-                                        {spotlightUser.type === 'local' ? user?.username || 'You' : spotlightUser.data.name}
-                                        <span className="font-normal opacity-80 text-xs ml-2">({spotlightUser.reason})</span>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
                     </ResizablePanel>
 
                     <ResizableHandle withHandle className="bg-white/10 hover:bg-white/20 transition-colors w-1.5" />
