@@ -155,6 +155,7 @@ app.use('/api/insights', require('./routes/insights'));
 app.use('/api/people', require('./routes/people'));
 app.use('/api/connections', require('./routes/connections'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/groups', require('./routes/groups'));
 
 const PORT = process.env.PORT || 5000;
 
@@ -248,6 +249,26 @@ io.on('connection', (socket) => {
             socket.emit('dm-sent-confirm', populated);
         } catch (err) {
             console.error('DM socket error:', err);
+        }
+    });
+
+    // --- Group Chat ---
+    socket.on('group-join-room', (groupId) => {
+        socket.join(`group:${groupId}`);
+    });
+
+    socket.on('group-leave-room', (groupId) => {
+        socket.leave(`group:${groupId}`);
+    });
+
+    socket.on('group-message', async ({ groupId, text, fromUserId }) => {
+        try {
+            const GroupMessage = require('./models/GroupMessage');
+            const msg = await GroupMessage.create({ group: groupId, sender: fromUserId, text });
+            const populated = await msg.populate('sender', 'username avatar');
+            io.to(`group:${groupId}`).emit('group-message-receive', populated);
+        } catch (err) {
+            console.error('Group message error:', err);
         }
     });
 });

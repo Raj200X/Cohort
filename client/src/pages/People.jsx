@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, UserPlus, UserCheck, Clock, MessageSquare, Users, X, Check } from 'lucide-react';
 import api from '../api';
+import GroupsTab from '../components/GroupsTab';
 
 const STUDY_GOALS = ['JEE', 'NEET', 'UPSC', 'CAT', 'GATE', 'Class 10/12', 'CS Placement', 'Other'];
 
@@ -194,9 +195,10 @@ const People = ({ onOpenDM }) => {
             </motion.div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-1 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 mb-8 w-fit">
+            <div className="flex flex-wrap gap-1 p-1 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 mb-8 w-fit">
                 {[
                     { key: 'discover', label: 'Discover' },
+                    { key: 'groups', label: 'Groups' },
                     { key: 'connections', label: `Connections ${connections.length > 0 ? `(${connections.length})` : ''}` },
                     { key: 'requests', label: `Requests ${pendingRequests.length > 0 ? `(${pendingRequests.length})` : ''}` }
                 ].map(tab => (
@@ -274,6 +276,11 @@ const People = ({ onOpenDM }) => {
                         </AnimatePresence>
                     )}
                 </div>
+            )}
+
+            {/* GROUPS TAB */}
+            {activeTab === 'groups' && (
+                <GroupsTab goalFilter={goalFilter} />
             )}
 
             {/* CONNECTIONS TAB */}
