@@ -239,10 +239,31 @@ const Room = () => {
     }, [socket, roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // --- WebRTC Helpers ---
+    // STUN: discovers public IPs. TURN: relays media when NAT blocks direct connection.
+    // Free TURN via Open Relay Project (metered.ca) — required for production across different ISPs.
     const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' },
-        { urls: 'stun:stun.framasoft.org:3478' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turns:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        }
     ];
 
     function createPeer(userToCall, callerID, stream) {
