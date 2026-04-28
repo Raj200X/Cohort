@@ -152,6 +152,9 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/explore', require('./routes/explore'));
 app.use('/api/community', require('./routes/community'));
 app.use('/api/insights', require('./routes/insights'));
+app.use('/api/people', require('./routes/people'));
+app.use('/api/connections', require('./routes/connections'));
+app.use('/api/messages', require('./routes/messages'));
 
 const PORT = process.env.PORT || 5000;
 
@@ -170,8 +173,16 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/studyroom',
         }
     });
 
+// userId → socketId map for DM routing (persists across connections)
+const userSocketMap = {};
+
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Register user's socket ID so DMs can be routed
+    socket.on('register-user', (userId) => {
+        if (userId) userSocketMap[userId] = socket.id;
+    });
 
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
@@ -189,7 +200,6 @@ io.on('connection', (socket) => {
 
     socket.on('answer-call', (data) => {
         console.log(`[Server] Relaying answer-call from ${socket.id} to ${data.to}`);
-        // Emit both 'id' (what the initiator reads to find the peer) and 'from' for consistency
         io.to(data.to).emit('call-accepted', { signal: data.signal, id: socket.id, from: socket.id, name: data.name });
     });
 
@@ -210,7 +220,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnecting', () => {
-        // Broadcast "user-disconnected" with ID to all rooms the user is in
         const rooms = [...socket.rooms];
         rooms.forEach((roomId) => {
             socket.to(roomId).emit('user-disconnected', socket.id);
@@ -219,7 +228,27 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
+        // Remove from DM routing map
+        for (const [uid, sid] of Object.entries(userSocketMap)) {
+            if (sid === socket.id) delete userSocketMap[uid];
+        }
         socket.broadcast.emit('call-ended');
+    });
+
+    // --- Direct Messages ---
+    socket.on('dm-send', async ({ toUserId, text, fromUserId }) => {
+        try {
+            const DirectMessage = require('./models/DirectMessage');
+            const msg = await DirectMessage.create({ sender: fromUserId, receiver: toUserId, text });
+            const populated = await msg.populate('sender', 'username avatar');
+            const recipientSocketId = userSocketMap[toUserId];
+            if (recipientSocketId) {
+                io.to(recipientSocketId).emit('dm-receive', populated);
+            }
+            socket.emit('dm-sent-confirm', populated);
+        } catch (err) {
+            console.error('DM socket error:', err);
+        }
     });
 });
 

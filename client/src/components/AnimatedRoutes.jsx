@@ -1,11 +1,11 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Home from '../pages/Home';
 import Room from '../pages/Room';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
-import Explore from '../pages/Explore';
+import People from '../pages/People';
 import Insights from '../pages/Insights';
 import Community from '../pages/Community';
 import Profile from '../pages/Profile';
@@ -53,13 +53,15 @@ const AnimatedRoutes = () => {
                     }
                 />
                 <Route
-                    path="/explore"
+                    path="/people"
                     element={
                         <PageWrapper>
-                            <Explore />
+                            <People />
                         </PageWrapper>
                     }
                 />
+                {/* Redirect old /explore links to /people */}
+                <Route path="/explore" element={<Navigate to="/people" replace />} />
                 <Route
                     path="/insights"
                     element={

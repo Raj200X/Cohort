@@ -28,6 +28,16 @@ const userSchema = new mongoose.Schema({
         totalHours: { type: Number, default: 0 },
         streak: { type: Number, default: 0 },
         lastStudyDate: { type: Date, default: null }
+    },
+    studyGoal: {
+        type: String,
+        default: '',
+        enum: ['', 'JEE', 'NEET', 'UPSC', 'CAT', 'GATE', 'Class 10/12', 'CS Placement', 'Other']
+    },
+    bio: {
+        type: String,
+        default: '',
+        maxlength: 200
     }
 });
 

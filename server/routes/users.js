@@ -103,7 +103,7 @@ router.put('/:userId', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Forbidden' });
         }
 
-        const { username, avatar, password, oldPassword } = req.body;
+        const { username, avatar, password, oldPassword, studyGoal, bio } = req.body;
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ msg: 'User not found' });
@@ -111,6 +111,8 @@ router.put('/:userId', auth, async (req, res) => {
         // Update basic fields
         if (username) user.username = username;
         if (avatar) user.avatar = avatar;
+        if (studyGoal !== undefined) user.studyGoal = studyGoal;
+        if (bio !== undefined) user.bio = bio;
 
         // Update Password
         if (password) {

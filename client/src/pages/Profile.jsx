@@ -3,14 +3,18 @@ import { motion } from 'framer-motion';
 import { User, Mail, Lock, Camera, Save, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import api from '../api';
 
+const STUDY_GOALS = ['', 'JEE', 'NEET', 'UPSC', 'CAT', 'GATE', 'Class 10/12', 'CS Placement', 'Other'];
+
 const Profile = () => {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
     const [formData, setFormData] = useState({
         username: user.username || '',
-        email: user.email || '', // Read-only usually
+        email: user.email || '',
         password: '',
         confirmPassword: '',
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
+        studyGoal: user.studyGoal || '',
+        bio: user.bio || ''
     });
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -49,7 +53,9 @@ const Profile = () => {
         try {
             const updatePayload = {
                 username: formData.username,
-                avatar: formData.avatar
+                avatar: formData.avatar,
+                studyGoal: formData.studyGoal,
+                bio: formData.bio
             };
             if (formData.password) {
                 updatePayload.password = formData.password;
@@ -172,6 +178,38 @@ const Profile = () => {
                                     />
                                 </div>
                                 <p className="text-xs text-gray-400 mt-1 ml-1">Email cannot be changed</p>
+                            </div>
+
+                            {/* Study Goal */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Study Goal</label>
+                                <select
+                                    name="studyGoal"
+                                    value={formData.studyGoal}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700 dark:text-white"
+                                >
+                                    <option value="">— Select your goal —</option>
+                                    {STUDY_GOALS.filter(g => g).map(g => (
+                                        <option key={g} value={g}>{g}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-400 mt-1 ml-1">Shown on your public profile — helps peers find you</p>
+                            </div>
+
+                            {/* Bio */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bio <span className="text-gray-400 font-normal">(Optional, max 200 chars)</span></label>
+                                <textarea
+                                    name="bio"
+                                    value={formData.bio}
+                                    onChange={handleChange}
+                                    maxLength={200}
+                                    rows={3}
+                                    placeholder="Tell peers what you're studying, your goals, or anything about yourself..."
+                                    className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700 dark:text-white resize-none"
+                                />
+                                <p className="text-xs text-gray-400 mt-1 ml-1">{formData.bio.length}/200</p>
                             </div>
 
                             <div className="pt-4 border-t border-gray-200 dark:border-white/10">
