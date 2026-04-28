@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Heart, Share2, MessageCircle, MoreHorizontal, Image as ImageIcon, X } from 'lucide-react';
-import axios from 'axios';
-import API_URL from '../config';
+import api from '../api';
 import CommentSection from '../components/CommentSection';
 
 const Community = () => {
@@ -19,7 +18,7 @@ const Community = () => {
 
     const fetchPosts = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/community`);
+            const res = await api.get('/api/community');
             setPosts(res.data);
         } catch (err) {
             console.error(err);
@@ -29,10 +28,9 @@ const Community = () => {
     const handleCreatePost = async () => {
         if (!newPostContent.trim()) return;
         try {
-            await axios.post(`${API_URL}/api/community`, {
+            await api.post('/api/community', {
                 content: newPostContent,
-                userId: user?._id, // Use real user ID
-                tags: ["#general"], // Simplified for now
+                tags: ["#general"],
                 image: imageUrl
             });
             setNewPostContent('');
@@ -58,7 +56,7 @@ const Community = () => {
                 return p;
             }));
 
-            await axios.put(`${API_URL}/api/community/${postId}/like`, { userId: user._id });
+            await api.put(`/api/community/${postId}/like`);
         } catch (err) {
             console.error(err);
             fetchPosts(); // Revert on error

@@ -3,8 +3,9 @@ const router = express.Router();
 const Goal = require('../models/Goal');
 const StudySession = require('../models/StudySession');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
 
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', auth, async (req, res) => {
     try {
         const { userId } = req.params;
 

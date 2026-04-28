@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Heart, Reply, MoreHorizontal } from 'lucide-react';
-import axios from 'axios';
-import API_URL from '../config';
+import api from '../api';
 
 const Comment = ({ comment, postId, refreshComments, depth = 0 }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
@@ -11,9 +10,8 @@ const Comment = ({ comment, postId, refreshComments, depth = 0 }) => {
     const handleReply = async () => {
         if (!replyContent.trim()) return;
         try {
-            await axios.post(`${API_URL}/api/community/${postId}/comments`, {
+            await api.post(`/api/community/${postId}/comments`, {
                 content: replyContent,
-                userId: user._id,
                 parentId: comment._id
             });
             setReplyContent('');
@@ -95,7 +93,7 @@ const CommentSection = ({ postId, isOpen }) => {
     const fetchComments = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/api/community/${postId}/comments`);
+            const res = await api.get(`/api/community/${postId}/comments`);
             const rawComments = res.data;
 
             // Organize flat comments into a tree structure
@@ -128,9 +126,8 @@ const CommentSection = ({ postId, isOpen }) => {
     const handlePostComment = async () => {
         if (!newComment.trim()) return;
         try {
-            await axios.post(`${API_URL}/api/community/${postId}/comments`, {
-                content: newComment,
-                userId: user._id
+            await api.post(`/api/community/${postId}/comments`, {
+                content: newComment
             });
             setNewComment('');
             fetchComments();

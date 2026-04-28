@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
-
 const Comment = require('../models/Comment');
+const auth = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
     try {
@@ -14,9 +14,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
-        const { content, userId, tags, image } = req.body;
+        const { content, tags, image } = req.body;
+        const userId = req.user.id; // from verified JWT
         const newPost = new Post({
             content,
             author: userId,
@@ -32,10 +33,10 @@ router.post('/', async (req, res) => {
 });
 
 // Toggle Like
-router.put('/:id/like', async (req, res) => {
+router.put('/:id/like', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        const { userId } = req.body;
+        const userId = req.user.id; // from verified JWT
 
         if (post.likes.includes(userId)) {
             post.likes = post.likes.filter(id => id.toString() !== userId);
@@ -52,9 +53,10 @@ router.put('/:id/like', async (req, res) => {
 });
 
 // Add Comment
-router.post('/:id/comments', async (req, res) => {
+router.post('/:id/comments', auth, async (req, res) => {
     try {
-        const { content, userId, parentId } = req.body;
+        const { content, parentId } = req.body;
+        const userId = req.user.id; // from verified JWT
         const post = await Post.findById(req.params.id);
 
         const newComment = new Comment({

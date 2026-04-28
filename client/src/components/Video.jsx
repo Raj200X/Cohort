@@ -5,8 +5,8 @@ const Video = ({ stream, className, isMuted, isCameraOff, name }) => {
     const ref = useRef();
 
     useEffect(() => {
-        if (ref.current && stream) {
-            ref.current.srcObject = stream;
+        if (ref.current) {
+            ref.current.srcObject = stream || null;
         }
     }, [stream]);
 
@@ -15,6 +15,7 @@ const Video = ({ stream, className, isMuted, isCameraOff, name }) => {
             <video
                 playsInline
                 autoPlay
+                muted={!!isMuted}   // ← actually mutes the audio element (prevents echo on local video)
                 ref={ref}
                 className={`w-full h-full object-cover transition-opacity duration-300 ${isCameraOff ? 'opacity-0' : 'opacity-100'}`}
             />
@@ -28,8 +29,8 @@ const Video = ({ stream, className, isMuted, isCameraOff, name }) => {
                 </div>
             )}
 
-            {/* Muted Indicator */}
-            {isMuted && (
+            {/* Muted Indicator — only show badge for remote peers, not self (isMuted is true for local to prevent echo) */}
+            {isMuted && name !== undefined && (
                 <div className="absolute bottom-3 right-3 bg-red-500/90 p-1.5 rounded-full shadow-lg backdrop-blur-sm z-10">
                     <MicOff size={14} className="text-white" />
                 </div>
@@ -39,3 +40,4 @@ const Video = ({ stream, className, isMuted, isCameraOff, name }) => {
 };
 
 export default Video;
+

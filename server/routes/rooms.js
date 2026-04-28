@@ -2,18 +2,25 @@ const express = require('express');
 const router = express.Router();
 const Room = require('../models/Room');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
+const auth = require('../middleware/auth');
 
 // Create Room
-router.post('/create', async (req, res) => {
+router.post('/create', auth, async (req, res) => {
     try {
-        const { name, userId, password, settings } = req.body;
+        const { name, password, settings } = req.body;
+        const userId = req.user.id; // taken from verified JWT — not trusted client body
         const roomId = uuidv4();
+
+        // Hash password if provided
+        const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
         const newRoom = new Room({
             roomId,
             name,
             createdBy: userId,
             participants: [userId],
-            password: password || undefined, // Store only if provided
+            password: hashedPassword,
             settings: settings || { timerDuration: 0 }
         });
         if (settings && settings.timerDuration > 0) {
@@ -28,15 +35,19 @@ router.post('/create', async (req, res) => {
 });
 
 // Join Room
-router.post('/join', async (req, res) => {
+router.post('/join', auth, async (req, res) => {
     try {
-        const { roomId, userId, password } = req.body;
+        const { roomId, password } = req.body;
+        const userId = req.user.id; // taken from verified JWT
         const room = await Room.findOne({ roomId });
         if (!room) return res.status(404).json({ message: 'Room not found' });
 
-        // Password Check
-        if (room.password && room.password !== password) {
-            return res.status(403).json({ message: 'Incorrect password', requiresPassword: true });
+        // Password check using bcrypt
+        if (room.password) {
+            const isMatch = await bcrypt.compare(password || '', room.password);
+            if (!isMatch) {
+                return res.status(403).json({ message: 'Incorrect password', requiresPassword: true });
+            }
         }
 
         if (!room.participants.includes(userId)) {

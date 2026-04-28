@@ -3,9 +3,10 @@ const router = express.Router();
 const User = require('../models/User');
 const Room = require('../models/Room');
 const bcrypt = require('bcryptjs');
+const auth = require('../middleware/auth');
 
 // Get User Dashboard Data
-router.get('/:userId/dashboard', async (req, res) => {
+router.get('/:userId/dashboard', auth, async (req, res) => {
     try {
         const { userId } = req.params;
         const user = await User.findById(userId);
@@ -41,24 +42,50 @@ router.get('/:userId/dashboard', async (req, res) => {
 });
 
 // Update Study Stats (Call this when user leaves a room or periodically)
-router.post('/:userId/stats', async (req, res) => {
+router.post('/:userId/stats', auth, async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Only allow a user to update their own stats
+        if (req.user.id !== userId) {
+            return res.status(403).json({ msg: 'Forbidden' });
+        }
+
         const { hoursToAdd } = req.body; // e.g., 0.5 for 30 mins
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         user.studyStats.totalHours += hoursToAdd || 0;
-        user.studyStats.lastStudyDate = new Date();
 
-        // Simple streak increment logic
-        // If last study date was yesterday (simplified), increment streak
-        // For simplicity, we just increment if hours > 0 and it's a new day
-        user.studyStats.streak += 1;
+        // Proper streak logic: compare calendar dates
+        const now = new Date();
+        const lastDate = user.studyStats?.lastStudyDate;
 
-        await user.save();
-        await user.save();
+        if (lastDate) {
+            const lastMidnight = new Date(lastDate);
+            lastMidnight.setHours(0, 0, 0, 0);
+            const todayMidnight = new Date(now);
+            todayMidnight.setHours(0, 0, 0, 0);
+
+            const diffDays = Math.round(
+                (todayMidnight - lastMidnight) / (1000 * 60 * 60 * 24)
+            );
+
+            if (diffDays === 1) {
+                user.studyStats.streak += 1; // Consecutive day — extend streak
+            } else if (diffDays === 0) {
+                // Same calendar day — do not change streak
+            } else {
+                user.studyStats.streak = 1; // Gap in days — reset streak to 1
+            }
+        } else {
+            user.studyStats.streak = 1; // First ever session
+        }
+
+        user.studyStats.lastStudyDate = now;
+
+        await user.save(); // single save — duplicate removed
         res.json(user.studyStats);
     } catch (err) {
         console.error(err);
@@ -67,9 +94,15 @@ router.post('/:userId/stats', async (req, res) => {
 });
 
 // Update User Profile
-router.put('/:userId', async (req, res) => {
+router.put('/:userId', auth, async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Only allow a user to update their own profile
+        if (req.user.id !== userId) {
+            return res.status(403).json({ msg: 'Forbidden' });
+        }
+
         const { username, avatar, password, oldPassword } = req.body;
 
         const user = await User.findById(userId);

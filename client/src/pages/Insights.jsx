@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2, Clock, Zap, Target, TrendingUp, Calendar } from 'lucide-react';
-import axios from 'axios';
-import API_URL from '../config';
+import api from '../api';
 
 // Placeholder/Simple Chart Component
 const PlaceholderChart = ({ data = [], height = "h-32" }) => (
@@ -41,7 +40,7 @@ const Insights = () => {
 
     const fetchData = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/insights/${user._id}`);
+            const res = await api.get(`/api/insights/${user._id}`);
             setData(res.data);
         } catch (err) {
             console.error(err);

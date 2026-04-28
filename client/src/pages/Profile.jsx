@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Camera, Save, RefreshCw, Link as LinkIcon } from 'lucide-react';
-import axios from 'axios';
-import API_URL from '../config';
+import api from '../api';
 
 const Profile = () => {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
@@ -56,7 +55,7 @@ const Profile = () => {
                 updatePayload.password = formData.password;
             }
 
-            const res = await axios.put(`${API_URL}/api/users/${user._id}`, updatePayload);
+            const res = await api.put(`/api/users/${user._id}`, updatePayload);
 
             // Update local storage and state
             const updatedUser = { ...user, ...res.data };

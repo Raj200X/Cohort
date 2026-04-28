@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
-import API_URL from '../config';
+import api from '../api';
 
 import Logo from '../components/Logo';
 
@@ -42,7 +41,7 @@ const Home = () => {
 
     const fetchRooms = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/rooms`);
+            const res = await api.get('/api/rooms');
             setRooms(res.data);
         } catch (err) {
             console.error('Error fetching rooms:', err);
@@ -52,13 +51,12 @@ const Home = () => {
     const createRoom = async () => {
         if (!roomName.trim()) return;
         try {
-            const res = await axios.post(`${API_URL}/api/rooms/create`, {
+            const res = await api.post('/api/rooms/create', {
                 name: roomName,
-                userId: user._id,
                 password: isPrivate ? roomPassword : null,
                 settings: isTimerEnabled ? { timerDuration: parseInt(timerDuration) } : null
             });
-            fetchRooms(); // Refresh list
+            fetchRooms();
             navigate(`/room/${res.data.roomId}`);
         } catch (err) {
             console.error(err);
@@ -80,9 +78,8 @@ const Home = () => {
         if (!id?.trim()) return;
 
         try {
-            const res = await axios.post(`${API_URL}/api/rooms/join`, {
+            const res = await api.post('/api/rooms/join', {
                 roomId: id,
-                userId: user._id,
                 password: password
             });
             navigate(`/room/${res.data.roomId}`);
@@ -365,11 +362,8 @@ const Home = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/users/${user._id}/dashboard`);
+            const res = await api.get(`/api/users/${user._id}/dashboard`);
             setDashboardData(res.data);
-            // Also update rooms list for "Upcoming Sessions" if we want to show all global rooms there
-            // Or maybe "Upcoming" should be "Joined Rooms"
-            // For now, let's keep "Upcoming" as "All Global Rooms" from existing fetchRooms
         } catch (err) {
             console.error(err);
         }

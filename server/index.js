@@ -33,8 +33,12 @@ app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
-// TEMPORARY: Trigger seeding via HTTP
+// TEMPORARY: Trigger seeding via HTTP — protected by SEED_SECRET env var
 app.get('/api/seed', async (req, res) => {
+    const { secret } = req.query;
+    if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
+        return res.status(403).json({ message: 'Forbidden: invalid or missing seed secret' });
+    }
     try {
         const Category = require('./models/Category');
         const Post = require('./models/Post');
@@ -185,7 +189,8 @@ io.on('connection', (socket) => {
 
     socket.on('answer-call', (data) => {
         console.log(`[Server] Relaying answer-call from ${socket.id} to ${data.to}`);
-        io.to(data.to).emit('call-accepted', { signal: data.signal, from: socket.id, name: data.name }); // Pass name back
+        // Emit both 'id' (what the initiator reads to find the peer) and 'from' for consistency
+        io.to(data.to).emit('call-accepted', { signal: data.signal, id: socket.id, from: socket.id, name: data.name });
     });
 
     socket.on('send-changes', (delta) => {

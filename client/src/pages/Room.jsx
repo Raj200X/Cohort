@@ -125,106 +125,118 @@ const Room = () => {
     useEffect(() => {
         if (!socket) return;
 
-        // Use saved state for initial constraints
-        // Note: We always request both to start, then toggle tracks immediately if needed
-        // This ensures permissions are granted once
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-            setLocalStream(stream);
+        // Named handler refs so we can cleanly remove exactly these listeners on cleanup
+        let onUserConnected, onUserDisconnected, onCallUser, onCallAccepted, onMediaToggled;
 
-            // Apply saved preferences immediately
-            stream.getAudioTracks().forEach(track => track.enabled = isMicOn);
-            stream.getVideoTracks().forEach(track => track.enabled = isVideoOn);
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                setLocalStream(stream);
 
-            socket.emit("join-room", roomId);
+                // Apply saved preferences immediately
+                stream.getAudioTracks().forEach(track => { track.enabled = isMicOn; });
+                stream.getVideoTracks().forEach(track => { track.enabled = isVideoOn; });
 
-            socket.on("user-connected", userId => {
-                const peer = createPeer(userId, socket.id, stream);
-                const newPeerObj = {
-                    peerID: userId,
-                    peer,
-                    stream: null, // Stream comes later via peer.on('stream')
-                    isMuted: false,
-                    isCameraOff: false,
-                    isScreenSharing: false
-                };
-                peersRef.current.push(newPeerObj);
-                setPeers(users => [...users, { ...newPeerObj, name: 'Joining...' }]);
-            });
+                socket.emit('join-room', roomId);
 
-            socket.on("user-disconnected", userId => {
-                const peerObj = peersRef.current.find(p => p.peerID === userId);
-                if (peerObj) { peerObj.peer.destroy(); }
-                const newPeers = peersRef.current.filter(p => p.peerID !== userId);
-                peersRef.current = newPeers;
-                setPeers(newPeers);
-            });
+                // --- Define named handlers (no anonymous functions, so we can remove them) ---
 
-            socket.on("call-user", ({ from, signal, name }) => {
-                const existingPeer = peersRef.current.find(p => p.peerID === from);
-                if (existingPeer) {
-                    // If peer exists, just process the new signal (trickle ICE)
-                    console.log("Adding signal to existing peer:", from);
-                    existingPeer.peer.signal(signal);
-                } else {
-                    // New peer connection
-                    console.log("Creating new peer for:", from);
-                    const peer = addPeer(signal, from, stream);
+                onUserConnected = (userId) => {
+                    console.log('[Room] user-connected:', userId);
+                    // Avoid duplicate peers
+                    if (peersRef.current.find(p => p.peerID === userId)) return;
+                    const peer = createPeer(userId, socket.id, stream);
                     const newPeerObj = {
-                        peerID: from,
+                        peerID: userId,
                         peer,
                         stream: null,
-                        name,
+                        name: 'Joining...',
                         isMuted: false,
                         isCameraOff: false,
                         isScreenSharing: false
                     };
                     peersRef.current.push(newPeerObj);
-                    setPeers(users => [...users, newPeerObj]);
-                }
-            });
+                    setPeers(prev => [...prev, newPeerObj]);
+                };
 
-            socket.on("call-accepted", ({ signal, id, name }) => {
-                const item = peersRef.current.find(p => p.peerID === id);
-                if (item) {
-                    item.peer.signal(signal);
-                    // Update name in state
-                    setPeers(users => users.map(u => u.peerID === id ? { ...u, name } : u));
-                    // Update ref name too for consistency (optional but good)
-                    item.name = name;
-                }
-            });
+                onUserDisconnected = (userId) => {
+                    console.log('[Room] user-disconnected:', userId);
+                    const peerObj = peersRef.current.find(p => p.peerID === userId);
+                    if (peerObj) peerObj.peer.destroy();
+                    peersRef.current = peersRef.current.filter(p => p.peerID !== userId);
+                    setPeers(prev => prev.filter(p => p.peerID !== userId));
+                };
 
-            socket.on("media-toggled", ({ peerID, type, status }) => {
-                // Update Ref
-                const peerObj = peersRef.current.find(p => p.peerID === peerID);
-                if (peerObj) {
-                    if (type === 'audio') peerObj.isMuted = !status;
-                    if (type === 'video') peerObj.isCameraOff = !status;
-                    if (type === 'screen') peerObj.isScreenSharing = status;
-                }
+                onCallUser = ({ from, signal, name: callerName }) => {
+                    console.log('[Room] call-user received from:', from);
+                    const existingPeer = peersRef.current.find(p => p.peerID === from);
+                    if (existingPeer) {
+                        // Already have a peer for this socket — just feed the signal (trickle ICE)
+                        try { existingPeer.peer.signal(signal); } catch (e) { console.warn('signal err:', e); }
+                        return;
+                    }
+                    const peer = addPeer(signal, from, stream);
+                    const newPeerObj = {
+                        peerID: from,
+                        peer,
+                        stream: null,
+                        name: callerName || 'Guest',
+                        isMuted: false,
+                        isCameraOff: false,
+                        isScreenSharing: false
+                    };
+                    peersRef.current.push(newPeerObj);
+                    setPeers(prev => [...prev, newPeerObj]);
+                };
 
-                // Update State
-                setPeers(users => users.map(u => {
-                    if (u.peerID === peerID) {
+                onCallAccepted = ({ signal, id, name: peerName }) => {
+                    console.log('[Room] call-accepted from peer id:', id);
+                    const item = peersRef.current.find(p => p.peerID === id);
+                    if (item) {
+                        try { item.peer.signal(signal); } catch (e) { console.warn('signal err on accept:', e); }
+                        item.name = peerName || 'Guest';
+                        setPeers(prev => prev.map(u => u.peerID === id ? { ...u, name: peerName || 'Guest' } : u));
+                    }
+                };
+
+                onMediaToggled = ({ peerID, type, status }) => {
+                    const peerObj = peersRef.current.find(p => p.peerID === peerID);
+                    if (peerObj) {
+                        if (type === 'audio') peerObj.isMuted = !status;
+                        if (type === 'video') peerObj.isCameraOff = !status;
+                        if (type === 'screen') peerObj.isScreenSharing = status;
+                    }
+                    setPeers(prev => prev.map(u => {
+                        if (u.peerID !== peerID) return u;
                         return {
                             ...u,
                             isMuted: type === 'audio' ? !status : u.isMuted,
                             isCameraOff: type === 'video' ? !status : u.isCameraOff,
                             isScreenSharing: type === 'screen' ? status : u.isScreenSharing
                         };
-                    }
-                    return u;
-                }));
+                    }));
+                };
+
+                socket.on('user-connected', onUserConnected);
+                socket.on('user-disconnected', onUserDisconnected);
+                socket.on('call-user', onCallUser);
+                socket.on('call-accepted', onCallAccepted);
+                socket.on('media-toggled', onMediaToggled);
+            })
+            .catch(err => {
+                console.error('[Room] getUserMedia failed:', err);
+                // Still join the room for chat even without camera/mic
+                socket.emit('join-room', roomId);
             });
-        });
+
         return () => {
-            socket.off("user-connected");
-            socket.off("user-disconnected");
-            socket.off("call-user");
-            socket.off("call-accepted");
-            socket.off("media-toggled");
+            // Remove only the exact named listeners we registered
+            if (onUserConnected)    socket.off('user-connected',    onUserConnected);
+            if (onUserDisconnected) socket.off('user-disconnected', onUserDisconnected);
+            if (onCallUser)         socket.off('call-user',         onCallUser);
+            if (onCallAccepted)     socket.off('call-accepted',     onCallAccepted);
+            if (onMediaToggled)     socket.off('media-toggled',     onMediaToggled);
         };
-    }, [socket, roomId]);
+    }, [socket, roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // --- WebRTC Helpers ---
     const iceServers = [
