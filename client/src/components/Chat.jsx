@@ -9,23 +9,29 @@ const Chat = ({ roomId, theme = 'light' }) => {
 
     useEffect(() => {
         if (!socket) return;
-        socket.emit('join-room', roomId);
-        socket.on('receive-message', (data) => {
+
+        // NOTE: Room.jsx already emits 'join-room' — do NOT emit it again here
+        // or every message gets broadcast twice (user is in the room twice).
+
+        const onReceiveMessage = (data) => {
             setMessages((prev) => [...prev, data]);
-        });
+        };
+
+        socket.on('receive-message', onReceiveMessage);
+
         return () => {
-            socket.off('receive-message');
+            socket.off('receive-message', onReceiveMessage); // remove only this listener
         };
     }, [socket, roomId]);
 
     const sendMessage = (e) => {
-        // Handle both button click (event object) and direct call
         if (e && e.preventDefault) e.preventDefault();
 
         if (message.trim() && socket) {
             const msgData = { roomId, message, sender: user?.username || 'Guest' };
             socket.emit('send-message', msgData);
-            setMessages((prev) => [...prev, msgData]);
+            // Do NOT push to local state here — server uses io.to(roomId).emit()
+            // which includes the sender, so 'receive-message' will add it for everyone.
             setMessage('');
         }
     };
