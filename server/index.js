@@ -156,6 +156,7 @@ app.use('/api/people', require('./routes/people'));
 app.use('/api/connections', require('./routes/connections'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/groups', require('./routes/groups'));
+app.use('/api/upload', require('./routes/upload'));
 
 const PORT = process.env.PORT || 5000;
 
@@ -237,10 +238,18 @@ io.on('connection', (socket) => {
     });
 
     // --- Direct Messages ---
-    socket.on('dm-send', async ({ toUserId, text, fromUserId }) => {
+    socket.on('dm-send', async ({ toUserId, text, fromUserId, fileUrl, fileType, mimeType, originalName }) => {
         try {
             const DirectMessage = require('./models/DirectMessage');
-            const msg = await DirectMessage.create({ sender: fromUserId, receiver: toUserId, text });
+            const msg = await DirectMessage.create({
+                sender: fromUserId,
+                receiver: toUserId,
+                text: text || '',
+                fileUrl: fileUrl || '',
+                fileType: fileType || '',
+                mimeType: mimeType || '',
+                originalName: originalName || ''
+            });
             const populated = await msg.populate('sender', 'username avatar');
             const recipientSocketId = userSocketMap[toUserId];
             if (recipientSocketId) {
@@ -261,10 +270,18 @@ io.on('connection', (socket) => {
         socket.leave(`group:${groupId}`);
     });
 
-    socket.on('group-message', async ({ groupId, text, fromUserId }) => {
+    socket.on('group-message', async ({ groupId, text, fromUserId, fileUrl, fileType, mimeType, originalName }) => {
         try {
             const GroupMessage = require('./models/GroupMessage');
-            const msg = await GroupMessage.create({ group: groupId, sender: fromUserId, text });
+            const msg = await GroupMessage.create({
+                group: groupId,
+                sender: fromUserId,
+                text: text || '',
+                fileUrl: fileUrl || '',
+                fileType: fileType || '',
+                mimeType: mimeType || '',
+                originalName: originalName || ''
+            });
             const populated = await msg.populate('sender', 'username avatar');
             io.to(`group:${groupId}`).emit('group-message-receive', populated);
         } catch (err) {

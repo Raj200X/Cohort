@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
+import { FileUploadButton, FileAttachment } from './FileUpload';
 import api from '../api';
 
 const DMDrawer = ({ isOpen, onClose, initialContact }) => {
@@ -11,22 +12,20 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
     const [activeContact, setActiveContact] = useState(null);
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
-    const [unread, setUnread] = useState({}); // contactId → unread count
+    const [pendingFile, setPendingFile] = useState(null); // { fileUrl, fileType, mimeType, originalName }
+    const [unread, setUnread] = useState({});
     const messagesEndRef = useRef(null);
 
     // Register user with socket for DM routing
     useEffect(() => {
-        if (socket && user?._id) {
-            socket.emit('register-user', user._id);
-        }
+        if (socket && user?._id) socket.emit('register-user', user._id);
     }, [socket, user?._id]);
 
     // Fetch connections (DM contacts)
     useEffect(() => {
         if (!isOpen) return;
         api.get('/api/connections').then(res => {
-            const people = res.data.map(c => c.user);
-            setContacts(people);
+            setContacts(res.data.map(c => c.user));
         }).catch(console.error);
     }, [isOpen]);
 
@@ -41,13 +40,12 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
         api.get(`/api/messages/${activeContact._id}`)
             .then(res => {
                 setMessages(res.data);
-                // Clear unread for this contact
                 setUnread(u => ({ ...u, [activeContact._id]: 0 }));
             })
             .catch(console.error);
     }, [activeContact]);
 
-    // Scroll to bottom when messages change
+    // Scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -55,7 +53,6 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
     // Listen for incoming DMs
     useEffect(() => {
         if (!socket) return;
-
         const onDmReceive = (msg) => {
             const senderId = msg.sender?._id || msg.sender;
             if (activeContact && senderId === activeContact._id) {
@@ -64,10 +61,7 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
                 setUnread(u => ({ ...u, [senderId]: (u[senderId] || 0) + 1 }));
             }
         };
-
-        const onDmSentConfirm = (msg) => {
-            setMessages(prev => [...prev, msg]);
-        };
+        const onDmSentConfirm = (msg) => setMessages(prev => [...prev, msg]);
 
         socket.on('dm-receive', onDmReceive);
         socket.on('dm-sent-confirm', onDmSentConfirm);
@@ -78,35 +72,28 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
     }, [socket, activeContact]);
 
     const sendMessage = () => {
-        if (!text.trim() || !activeContact || !socket) return;
+        if ((!text.trim() && !pendingFile) || !activeContact || !socket) return;
         socket.emit('dm-send', {
             toUserId: activeContact._id,
             fromUserId: user._id,
-            text: text.trim()
+            text: text.trim(),
+            ...(pendingFile || {})
         });
         setText('');
+        setPendingFile(null);
     };
-
-    const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
                         onClick={onClose}
                     />
-
-                    {/* Drawer */}
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 26, stiffness: 280 }}
                         className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-[#1c1c1e] border-l border-gray-200 dark:border-white/10 z-50 flex flex-col shadow-2xl"
                     >
@@ -126,72 +113,69 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
                                     <h2 className="font-bold text-gray-900 dark:text-white">Messages</h2>
                                 </div>
                             )}
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-400"
-                            >
+                            <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-400">
                                 <X size={18} />
                             </button>
                         </div>
 
                         {!activeContact ? (
-                            /* Contact List */
+                            /* ── Contact List ── */
                             <div className="flex-1 overflow-y-auto">
                                 {contacts.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-full text-center px-8">
                                         <div className="text-5xl mb-4">💬</div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Connect with study peers to start chatting.</p>
                                     </div>
-                                ) : (
-                                    contacts.map(contact => (
-                                        <button
-                                            key={contact._id}
-                                            onClick={() => setActiveContact(contact)}
-                                            className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left border-b border-gray-50 dark:border-white/5"
-                                        >
-                                            <img
-                                                src={contact.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${contact.username}`}
-                                                alt={contact.username}
-                                                className="w-10 h-10 rounded-full bg-gray-100 shrink-0"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                                                        {contact.username}
+                                ) : contacts.map(contact => (
+                                    <button
+                                        key={contact._id}
+                                        onClick={() => setActiveContact(contact)}
+                                        className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left border-b border-gray-50 dark:border-white/5"
+                                    >
+                                        <img
+                                            src={contact.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${contact.username}`}
+                                            alt={contact.username}
+                                            className="w-10 h-10 rounded-full bg-gray-100 shrink-0"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-semibold text-gray-900 dark:text-white text-sm truncate">{contact.username}</span>
+                                                {unread[contact._id] > 0 && (
+                                                    <span className="ml-2 bg-indigo-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                                                        {unread[contact._id]}
                                                     </span>
-                                                    {unread[contact._id] > 0 && (
-                                                        <span className="ml-2 bg-indigo-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shrink-0">
-                                                            {unread[contact._id]}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {contact.studyGoal && (
-                                                    <span className="text-xs text-gray-400">{contact.studyGoal}</span>
                                                 )}
                                             </div>
-                                        </button>
-                                    ))
-                                )}
+                                            {contact.studyGoal && <span className="text-xs text-gray-400">{contact.studyGoal}</span>}
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         ) : (
-                            /* Message Thread */
+                            /* ── Message Thread ── */
                             <>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                                     {messages.length === 0 && (
-                                        <div className="text-center text-gray-400 text-sm mt-10">
-                                            Say hi to {activeContact.username}! 👋
-                                        </div>
+                                        <div className="text-center text-gray-400 text-sm mt-10">Say hi to {activeContact.username}! 👋</div>
                                     )}
                                     {messages.map((msg, i) => {
                                         const isMe = (msg.sender?._id || msg.sender)?.toString() === user._id;
                                         return (
                                             <div key={msg._id || i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${
+                                                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
                                                     isMe
                                                         ? 'bg-indigo-600 text-white rounded-br-none'
                                                         : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white rounded-bl-none'
                                                 }`}>
-                                                    {msg.text}
+                                                    {msg.text && <p>{msg.text}</p>}
+                                                    {msg.fileUrl && (
+                                                        <FileAttachment
+                                                            fileUrl={msg.fileUrl}
+                                                            fileType={msg.fileType}
+                                                            originalName={msg.originalName}
+                                                            mimeType={msg.mimeType}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -199,9 +183,13 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
                                     <div ref={messagesEndRef} />
                                 </div>
 
-                                {/* Input */}
+                                {/* Input Row */}
                                 <div className="p-4 border-t border-gray-100 dark:border-white/10 shrink-0">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 items-center">
+                                        <FileUploadButton
+                                            onFileReady={setPendingFile}
+                                            disabled={false}
+                                        />
                                         <input
                                             type="text"
                                             value={text}
@@ -212,7 +200,7 @@ const DMDrawer = ({ isOpen, onClose, initialContact }) => {
                                         />
                                         <button
                                             onClick={sendMessage}
-                                            disabled={!text.trim()}
+                                            disabled={!text.trim() && !pendingFile}
                                             className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white transition-all"
                                         >
                                             <Send size={16} />

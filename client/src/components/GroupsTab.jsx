@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, ArrowLeft, Plus, Users, Lock, Unlock, Crown, LogOut, Trash2 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
+import { FileUploadButton, FileAttachment } from './FileUpload';
 import api from '../api';
 
 const STUDY_GOALS = ['JEE', 'NEET', 'UPSC', 'CAT', 'GATE', 'Class 10/12', 'CS Placement', 'Other'];
@@ -25,6 +26,7 @@ const GroupsTab = ({ goalFilter }) => {
     const [activeGroup, setActiveGroup] = useState(null);
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
+    const [pendingFile, setPendingFile] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -117,13 +119,15 @@ const GroupsTab = ({ goalFilter }) => {
     };
 
     const sendMessage = () => {
-        if (!text.trim() || !activeGroup || !socket) return;
+        if ((!text.trim() && !pendingFile) || !activeGroup || !socket) return;
         socket.emit('group-message', {
             groupId: activeGroup._id,
             fromUserId: user._id,
-            text: text.trim()
+            text: text.trim(),
+            ...(pendingFile || {})
         });
         setText('');
+        setPendingFile(null);
     };
 
     const isMember = (group) => group.members?.some(m => (m._id || m) === user._id);
@@ -406,7 +410,15 @@ const GroupsTab = ({ goalFilter }) => {
                                             <span className="text-[10px] text-gray-400 ml-1">{msg.sender?.username}</span>
                                         )}
                                         <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white rounded-bl-none'}`}>
-                                            {msg.text}
+                                            {msg.text && <p>{msg.text}</p>}
+                                            {msg.fileUrl && (
+                                                <FileAttachment
+                                                    fileUrl={msg.fileUrl}
+                                                    fileType={msg.fileType}
+                                                    originalName={msg.originalName}
+                                                    mimeType={msg.mimeType}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -417,7 +429,8 @@ const GroupsTab = ({ goalFilter }) => {
 
                     {/* Input */}
                     <div className="p-3 border-t border-gray-100 dark:border-white/10">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                            <FileUploadButton onFileReady={setPendingFile} disabled={false} />
                             <input
                                 type="text"
                                 value={text}
@@ -428,7 +441,7 @@ const GroupsTab = ({ goalFilter }) => {
                             />
                             <button
                                 onClick={sendMessage}
-                                disabled={!text.trim()}
+                                disabled={!text.trim() && !pendingFile}
                                 className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white transition-all"
                             >
                                 <Send size={16} />

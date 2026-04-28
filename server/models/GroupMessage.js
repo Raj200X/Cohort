@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const groupMessageSchema = new mongoose.Schema({
     group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    text: { type: String, required: true, maxlength: 2000 }
+    text: { type: String, default: '', maxlength: 2000 },
+    fileUrl: { type: String, default: '' },
+    fileType: { type: String, enum: ['', 'image', 'document'], default: '' },
+    mimeType: { type: String, default: '' },
+    originalName: { type: String, default: '' }
 }, { timestamps: true });
 
 groupMessageSchema.index({ group: 1, createdAt: -1 });

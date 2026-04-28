@@ -30,13 +30,17 @@ router.get('/:userId', auth, async (req, res) => {
 // POST /api/messages/:userId — persist a DM (socket relay is handled server-side)
 router.post('/:userId', auth, async (req, res) => {
     try {
-        const { text } = req.body;
-        if (!text?.trim()) return res.status(400).json({ message: 'Text required' });
+        const { text, fileUrl, fileType, mimeType, originalName } = req.body;
+        if (!text?.trim() && !fileUrl) return res.status(400).json({ message: 'Text or file required' });
 
         const msg = await DirectMessage.create({
             sender: req.user.id,
             receiver: req.params.userId,
-            text: text.trim()
+            text: text?.trim() || '',
+            fileUrl: fileUrl || '',
+            fileType: fileType || '',
+            mimeType: mimeType || '',
+            originalName: originalName || ''
         });
         res.status(201).json(msg);
     } catch (err) {

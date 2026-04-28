@@ -13,9 +13,14 @@ const directMessageSchema = new mongoose.Schema({
     },
     text: {
         type: String,
-        required: true,
+        default: '',
         maxlength: 2000
     },
+    // File attachment (image or document)
+    fileUrl: { type: String, default: '' },
+    fileType: { type: String, enum: ['', 'image', 'document'], default: '' },
+    mimeType: { type: String, default: '' },
+    originalName: { type: String, default: '' },
     read: {
         type: Boolean,
         default: false
