@@ -13,8 +13,10 @@ const Home = () => {
     // Room Settings State
     const [roomPassword, setRoomPassword] = useState('');
     const [timerDuration, setTimerDuration] = useState('');
+    const [expiryMinutes, setExpiryMinutes] = useState('60');
     const [isPrivate, setIsPrivate] = useState(false);
     const [isTimerEnabled, setIsTimerEnabled] = useState(false);
+    const [isExpiryEnabled, setIsExpiryEnabled] = useState(false);
 
     // Join Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -54,6 +56,7 @@ const Home = () => {
             const res = await api.post('/api/rooms/create', {
                 name: roomName,
                 password: isPrivate ? roomPassword : null,
+                expiryMinutes: isExpiryEnabled ? parseInt(expiryMinutes) : null,
                 settings: isTimerEnabled ? { timerDuration: parseInt(timerDuration) } : null
             });
             fetchRooms();
@@ -413,7 +416,7 @@ const Home = () => {
                                     </div>
 
                                     {/* Advanced Settings Toggles */}
-                                    <div className="flex gap-4 text-sm mt-3">
+                                    <div className="flex flex-wrap gap-2 text-sm mt-3">
                                         <button
                                             onClick={() => setIsPrivate(!isPrivate)}
                                             className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${isPrivate ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-transparent text-gray-500 dark:text-gray-400 border-gray-300 dark:border-white/10'}`}
@@ -426,10 +429,16 @@ const Home = () => {
                                         >
                                             {isTimerEnabled ? '⏱️ Timer On' : '⏱️ Timer Off'}
                                         </button>
+                                        <button
+                                            onClick={() => setIsExpiryEnabled(!isExpiryEnabled)}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${isExpiryEnabled ? 'bg-orange-500 text-white border-orange-500' : 'bg-transparent text-gray-500 dark:text-gray-400 border-gray-300 dark:border-white/10'}`}
+                                        >
+                                            {isExpiryEnabled ? '💀 Expires' : '♾️ No Expiry'}
+                                        </button>
                                     </div>
 
                                     {/* Conditional Inputs */}
-                                    {(isPrivate || isTimerEnabled) && (
+                                    {(isPrivate || isTimerEnabled || isExpiryEnabled) && (
                                         <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                                             {isPrivate && (
                                                 <input
@@ -443,11 +452,25 @@ const Home = () => {
                                             {isTimerEnabled && (
                                                 <input
                                                     type="number"
-                                                    placeholder="Mins"
+                                                    placeholder="Timer (mins)"
                                                     className="px-4 py-2 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
                                                     value={timerDuration}
                                                     onChange={(e) => setTimerDuration(e.target.value)}
                                                 />
+                                            )}
+                                            {isExpiryEnabled && (
+                                                <select
+                                                    className="px-4 py-2 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 dark:text-white text-sm"
+                                                    value={expiryMinutes}
+                                                    onChange={(e) => setExpiryMinutes(e.target.value)}
+                                                >
+                                                    <option value="30">Expires in 30 min</option>
+                                                    <option value="60">Expires in 1 hour</option>
+                                                    <option value="120">Expires in 2 hours</option>
+                                                    <option value="240">Expires in 4 hours</option>
+                                                    <option value="480">Expires in 8 hours</option>
+                                                    <option value="1440">Expires in 24 hours</option>
+                                                </select>
                                             )}
                                         </div>
                                     )}
@@ -477,27 +500,51 @@ const Home = () => {
                                 {rooms.length === 0 ? (
                                     <p className="text-gray-500 dark:text-gray-400">No active sessions. Create one to get started!</p>
                                 ) : (
-                                    rooms.map((room) => (
-                                        <div key={room._id} className="glass p-5 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg transition-all group cursor-pointer flex justify-between items-center" onClick={() => handleJoinClick(room)}>
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xl">
-                                                    📹
+                                    rooms.map((room) => {
+                                        // Compute live time-remaining for expiry badge
+                                        const expiryMs = room.expiresAt ? new Date(room.expiresAt) - Date.now() : null;
+                                        const expiryMins = expiryMs ? Math.max(0, Math.floor(expiryMs / 60000)) : null;
+                                        const expirySecs = expiryMs ? Math.max(0, Math.floor((expiryMs % 60000) / 1000)) : null;
+                                        const isCritical = expiryMins !== null && expiryMins < 10;
+                                        const expiryLabel = expiryMins !== null
+                                            ? expiryMins > 0
+                                                ? `Expires in ${expiryMins}m ${expirySecs}s`
+                                                : 'Expiring…'
+                                            : null;
+
+                                        return (
+                                            <div key={room._id} className="glass p-5 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg transition-all group cursor-pointer flex justify-between items-center" onClick={() => handleJoinClick(room)}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xl">
+                                                        📹
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors flex items-center gap-2">
+                                                            {room.name || 'Untitled Room'}
+                                                            {room.hasPassword && <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full">🔒 Private</span>}
+                                                        </h3>
+                                                        <div className="flex items-center gap-3 mt-0.5">
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                                                {new Date(room.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {room.participants?.length || 0} members
+                                                            </p>
+                                                            {expiryLabel && (
+                                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                                    isCritical
+                                                                        ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse'
+                                                                        : 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400'
+                                                                }`}>
+                                                                    ⏳ {expiryLabel}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors flex items-center gap-2">
-                                                        {room.name || 'Untitled Room'}
-                                                        {room.hasPassword && <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full">🔒 Private</span>}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                        {new Date(room.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {room.participants?.length || 0} members
-                                                    </p>
-                                                </div>
+                                                <button className="px-5 py-2 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                                    Join
+                                                </button>
                                             </div>
-                                            <button className="px-5 py-2 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                                Join
-                                            </button>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>
